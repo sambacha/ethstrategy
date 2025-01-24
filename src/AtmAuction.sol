@@ -9,7 +9,8 @@ contract AtmAuction is DutchAuction {
 
     constructor(address _ethStrategy, address _governor, address _paymentToken) DutchAuction(_ethStrategy, _governor, _paymentToken) {}
 
-    function _fill(uint128 amount, uint128 price) internal override {
+    function _fill(uint128 amount, uint128 price, uint64 startTime, uint64 duration) internal override {
+      super._fill(amount, price, startTime, duration);
       SafeTransferLib.safeTransferFrom(paymentToken, msg.sender, owner(), amount * price);
       IEthStrategy(ethStrategy).mint(msg.sender, amount);
     }

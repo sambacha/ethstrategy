@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import {DutchAuction} from "./DutchAuction.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {IEthStrategy} from "./DutchAuction.sol";
-
+import {console} from "forge-std/console.sol";
 contract BondAuction is DutchAuction {
 
     struct Bond {
@@ -23,16 +23,16 @@ contract BondAuction is DutchAuction {
 
     constructor(address _ethStrategy, address _governor, address _paymentToken) DutchAuction(_ethStrategy, _governor, _paymentToken) {}
 
-    function _fill(uint128 amount, uint128 price) internal override {
+    function _fill(uint128 amount, uint128 price, uint64 startTime, uint64 duration) internal override {
+        super._fill(amount, price, startTime, duration);
         if(bonds[msg.sender].startRedemption != 0) {
           revert UnredeemedBond();
         }
         SafeTransferLib.safeTransferFrom(paymentToken, msg.sender, address(this), amount * price);
-        Auction memory _auction = auction;
         bonds[msg.sender] = Bond({
           amount: amount,
           price: price,
-          startRedemption: _auction.startTime + _auction.duration
+          startRedemption: startTime + duration
         });
     }
 
@@ -52,7 +52,7 @@ contract BondAuction is DutchAuction {
       if(currentTime > bond.startRedemption + REDEMPTION_WINDOW) {
         revert RedemptionWindowPassed();
       }
-      SafeTransferLib.safeTransferFrom(paymentToken, address(this), owner(), bond.amount * bond.price);
+      SafeTransferLib.safeTransfer(paymentToken, owner(), bond.amount * bond.price);
       IEthStrategy(ethStrategy).mint(msg.sender, bond.amount);
       delete bonds[msg.sender];
     }
@@ -66,7 +66,11 @@ contract BondAuction is DutchAuction {
       if(bond.startRedemption == 0) {
         revert NoBondToWithdraw();
       }
-      SafeTransferLib.safeTransferFrom(paymentToken, address(this), msg.sender, bond.amount * bond.price);
+      uint256 currentTime = block.timestamp;
+      if(currentTime < bond.startRedemption) {
+        revert RedemptionWindowNotStarted();
+      }
+      SafeTransferLib.safeTransfer(paymentToken, msg.sender, bond.amount * bond.price);
       delete bonds[msg.sender];
     }
 }

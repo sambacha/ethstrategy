@@ -5,12 +5,9 @@ import {OwnableRoles} from "solady/src/auth/OwnableRoles.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 
 contract EthStrategy is ERC20Votes, OwnableRoles {
-    constructor(address _governor, address[] memory _minters) {
+    uint8 public constant MINTER_ROLE = 1;
+    constructor(address _governor) {
         _initializeOwner(_governor);
-        _grantRoles(msg.sender, 1);
-        for(uint256 i = 0; i < _minters.length; i++) {
-            _grantRoles(_minters[i], 2);
-        }
     }
     function name() public view virtual override returns (string memory) {
         return "EthStrategy";
@@ -20,7 +17,7 @@ contract EthStrategy is ERC20Votes, OwnableRoles {
         return "ETHSR";
     }
 
-    function mint(address _to, uint256 _amount) public onlyOwnerOrRoles(2) {
+    function mint(address _to, uint256 _amount) public onlyOwnerOrRoles(MINTER_ROLE) {
         _mint(_to, _amount);
     }
 
