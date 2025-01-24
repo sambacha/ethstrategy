@@ -156,7 +156,7 @@ contract BondAuctionTest is DutchAuctionTest {
     uint128 _amount = defaultAmount / 2;
     mintAndApprove(alice, _amount * defaultStartPrice, address(dutchAuction), address(usdcToken));
     
-    test_startAuction_success();
+    test_startAuction_success_1();
     vm.prank(alice);
     vm.expectEmit();
     emit DutchAuction.AuctionFilled(alice, _amount, defaultStartPrice);

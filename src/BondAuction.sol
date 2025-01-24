@@ -52,9 +52,9 @@ contract BondAuction is DutchAuction {
       if(currentTime > bond.startRedemption + REDEMPTION_WINDOW) {
         revert RedemptionWindowPassed();
       }
+      delete bonds[msg.sender];
       SafeTransferLib.safeTransfer(paymentToken, owner(), bond.amount * bond.price);
       IEthStrategy(ethStrategy).mint(msg.sender, bond.amount);
-      delete bonds[msg.sender];
     }
 
     function withdraw() external {

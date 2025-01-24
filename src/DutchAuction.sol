@@ -55,8 +55,11 @@ contract DutchAuction is OwnableRoles {
         uint128 _endPrice,
         uint128 _amount
     ) public onlyOwnerOrRoles(ADMIN_ROLE) {
-        uint256 currentTime = block.timestamp;
-        if(_startTime < currentTime || _startTime > currentTime + MAX_START_TIME_WINDOW || _startTime == 0) {
+        uint64 currentTime = uint64(block.timestamp);
+        if(_startTime == 0) {
+          _startTime = currentTime;
+        }
+        if(_startTime < currentTime || _startTime > currentTime + MAX_START_TIME_WINDOW) {
           revert InvalidStartTime();
         }
         if(_duration == 0 || _duration > MAX_DURATION) {

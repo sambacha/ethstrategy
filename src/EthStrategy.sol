@@ -21,5 +21,8 @@ contract EthStrategy is ERC20Votes, OwnableRoles {
         _mint(_to, _amount);
     }
 
+    function getPastTotalSupply(uint256 timepoint) public view virtual returns (uint256) {
+        return getPastVotesTotalSupply(timepoint);
+    }
 }
 

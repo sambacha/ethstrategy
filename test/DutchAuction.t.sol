@@ -26,7 +26,7 @@ contract DutchAuctionTest is BaseTest {
     vm.stopPrank();
   }
 
-  function test_startAuction_success() public {
+  function test_startAuction_success_1() public {
     vm.startPrank(admin1.addr);
     DutchAuction.Auction memory auction = DutchAuction.Auction({
       startTime: uint64(block.timestamp),
@@ -38,6 +38,28 @@ contract DutchAuctionTest is BaseTest {
     vm.expectEmit();
     emit DutchAuction.AuctionStarted(auction);
     dutchAuction.startAuction(uint64(block.timestamp), defaultDuration, defaultStartPrice, defaultEndPrice, defaultAmount);
+    vm.stopPrank();
+
+    (uint64 startTime, uint64 duration, uint128 startPrice, uint128 endPrice, uint128 amount) = dutchAuction.auction();
+    assertEq(startTime, uint64(block.timestamp), "startTime not assigned correctly");
+    assertEq(duration, defaultDuration, "duration not assigned correctly");
+    assertEq(startPrice, defaultStartPrice, "startPrice not assigned correctly");
+    assertEq(endPrice, defaultEndPrice, "endPrice not assigned correctly");
+    assertEq(amount, defaultAmount, "amount not assigned correctly");
+  }
+
+  function test_startAuction_success_2() public {
+    vm.startPrank(admin1.addr);
+    DutchAuction.Auction memory auction = DutchAuction.Auction({
+      startTime: uint64(block.timestamp),
+      duration: defaultDuration,
+      startPrice: defaultStartPrice,
+      endPrice: defaultEndPrice,
+      amount: defaultAmount
+    });
+    vm.expectEmit();
+    emit DutchAuction.AuctionStarted(auction);
+    dutchAuction.startAuction(uint64(0), defaultDuration, defaultStartPrice, defaultEndPrice, defaultAmount);
     vm.stopPrank();
 
     (uint64 startTime, uint64 duration, uint128 startPrice, uint128 endPrice, uint128 amount) = dutchAuction.auction();
@@ -103,18 +125,6 @@ contract DutchAuctionTest is BaseTest {
       assertEq(endPrice, 0, "endPrice not assigned correctly");
       assertEq(amount, 0, "amount not assigned correctly");
   }
-  function test_startAuction_invalidStartTime_3() public {
-      vm.startPrank(admin1.addr);
-      vm.expectRevert(DutchAuction.InvalidStartTime.selector);
-      dutchAuction.startAuction(uint64(0), defaultDuration, defaultStartPrice, defaultEndPrice, defaultAmount);
-      vm.stopPrank();
-      (uint64 startTime, uint64 duration, uint128 startPrice, uint128 endPrice, uint128 amount) = dutchAuction.auction();
-      assertEq(startTime, uint64(0), "startTime not assigned correctly");
-      assertEq(duration, 0, "duration not assigned correctly");
-      assertEq(startPrice, 0, "startPrice not assigned correctly");
-      assertEq(endPrice, 0, "endPrice not assigned correctly");
-      assertEq(amount, 0, "amount not assigned correctly");
-  }
 
   function test_startAuction_invalidStartPrice_1() public {
     vm.startPrank(admin1.addr);
@@ -169,7 +179,7 @@ contract DutchAuctionTest is BaseTest {
   }
 
   function test_startAuction_auctionAlreadyActive() public {
-    test_startAuction_success();
+    test_startAuction_success_1();
     vm.startPrank(admin1.addr);
     vm.expectRevert(DutchAuction.AuctionAlreadyActive.selector);
     dutchAuction.startAuction(uint64(block.timestamp), defaultDuration, defaultStartPrice, defaultEndPrice, defaultAmount);
@@ -178,7 +188,7 @@ contract DutchAuctionTest is BaseTest {
 
   // fill the max amount (deletes the auction and emits AuctionEndedEarly)
   function test_fill_success_1() public virtual{
-    test_startAuction_success();
+    test_startAuction_success_1();
     vm.prank(alice);
     vm.expectEmit();
     emit DutchAuction.AuctionEndedEarly();
@@ -196,7 +206,7 @@ contract DutchAuctionTest is BaseTest {
 
   // fill less than the max amount
   function test_fill_success_2() public virtual {
-    test_startAuction_success();
+    test_startAuction_success_1();
     vm.prank(alice);
     vm.expectEmit();
     emit DutchAuction.AuctionFilled(alice, defaultAmount - 1, defaultStartPrice);
@@ -227,7 +237,7 @@ contract DutchAuctionTest is BaseTest {
   // starting after the auction ended
   function test_fill_auctionNotActive_2() public {
     uint256 expectedStartTime = block.timestamp;
-    test_startAuction_success();
+    test_startAuction_success_1();
     vm.warp(block.timestamp + defaultDuration);
     vm.prank(alice);
     vm.expectRevert(DutchAuction.AuctionNotActive.selector);
@@ -279,21 +289,21 @@ contract DutchAuctionTest is BaseTest {
   }
 
   function test_fill_amountExceedsSupply() public {
-    test_startAuction_success();
+    test_startAuction_success_1();
     vm.prank(alice);
     vm.expectRevert(DutchAuction.AmountExceedsSupply.selector);
     dutchAuction.fill(defaultAmount + 1);
   }
 
   function test_fill_fillAmountZero() public {
-    test_startAuction_success();
+    test_startAuction_success_1();
     vm.prank(alice);
     vm.expectRevert(DutchAuction.FillAmountZero.selector);
     dutchAuction.fill(0);
   }
 
   function test_cancelAuction_success() public {
-    test_startAuction_success();
+    test_startAuction_success_1();
     vm.startPrank(admin1.addr);
     vm.expectEmit();
     emit DutchAuction.AuctionCancelled();
@@ -316,7 +326,7 @@ contract DutchAuctionTest is BaseTest {
   }
 
   function test_getCurrentPrice_success() public {
-    test_startAuction_success();
+    test_startAuction_success_1();
     uint128 currentPrice = dutchAuction.getCurrentPrice(block.timestamp);
     assertEq(currentPrice, defaultStartPrice, "currentPrice not assigned correctly");
   }
@@ -327,7 +337,7 @@ contract DutchAuctionTest is BaseTest {
   }
 
   function test_isAuctionActive_success_1() public {
-    test_startAuction_success();
+    test_startAuction_success_1();
     bool isActive = dutchAuction.isAuctionActive(block.timestamp);
     assertTrue(isActive, "auction not active");
   }
@@ -338,7 +348,7 @@ contract DutchAuctionTest is BaseTest {
   }
 
   function test_isAuctionActive_success_3() public {
-    test_startAuction_success();
+    test_startAuction_success_1();
     vm.warp(block.timestamp + defaultDuration);
     bool isActive = dutchAuction.isAuctionActive(block.timestamp);
     assertTrue(!isActive, "auction active");

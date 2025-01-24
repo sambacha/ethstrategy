@@ -40,7 +40,7 @@ contract BaseTest is Test {
 
     ethStrategy = new EthStrategy(initialOwner.addr);
     vm.prank(initialOwner.addr);
-    governor = new EthStrategyGovernor(IVotes(address(ethStrategy)));
+    governor = new EthStrategyGovernor(IVotes(address(ethStrategy)), 4);
 
     vm.prank(initialOwner.addr);
     ethStrategy.transferOwnership(address(governor));
