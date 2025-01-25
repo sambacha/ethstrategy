@@ -4,7 +4,6 @@ pragma solidity ^0.8.13;
 import {DutchAuction} from "./DutchAuction.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {IEthStrategy} from "./DutchAuction.sol";
-import {console} from "forge-std/console.sol";
 contract BondAuction is DutchAuction {
 
     struct Bond {
