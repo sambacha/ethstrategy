@@ -6,7 +6,6 @@ import {EthStrategy} from "../../src/EthStrategy.sol";
 import {EthStrategyGovernor, IVotes} from "../../src/EthStrategyGovernor.sol";
 import {USDCToken} from "./USDCToken.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
-import {console} from "forge-std/console.sol";
 
 interface IERC20 {
     function mint(address to, uint256 amount) external;
@@ -58,15 +57,34 @@ contract BaseTest is Test {
         IERC20(_token).approve(spender, _amount);
     }
 
-    function calculateFillPrice(
+    function calculateAmountIn(
+        uint128 _amountOut,
         uint64 _startTime,
         uint64 _duration,
         uint128 _startPrice,
         uint128 _endPrice,
-        uint64 _currentTime
+        uint64 _currentTime,
+        uint8 _decimals
+    ) public pure returns (uint128 amountIn) {
+        uint64 delta_t = _duration - (_currentTime - _startTime);
+        uint128 delta_p = _startPrice - _endPrice;
+        uint128 currentPrice = uint128(((delta_p * delta_t) / _duration) + _endPrice);
+        amountIn = uint128((_amountOut * currentPrice) / 10 ** _decimals);
+        return (amountIn == 0) ? 1 : amountIn;
+    }
+
+    function calculateAmountOut(
+        uint128 _amountIn,
+        uint64 _startTime,
+        uint64 _duration,
+        uint128 _startPrice,
+        uint128 _endPrice,
+        uint64 _currentTime,
+        uint8 _decimals
     ) public pure returns (uint128) {
         uint64 delta_t = _duration - (_currentTime - _startTime);
         uint128 delta_p = _startPrice - _endPrice;
-        return uint128(((delta_p * delta_t) / _duration) + _endPrice);
+        uint128 currentPrice = uint128(((delta_p * delta_t) / _duration) + _endPrice);
+        return uint128((_amountIn * 10 ** _decimals) / currentPrice);
     }
 }

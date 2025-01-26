@@ -221,11 +221,20 @@ contract DutchAuctionTest is BaseTest {
     // fill the max amount (deletes the auction and emits AuctionEndedEarly)
     function test_fill_success_1() public virtual {
         test_startAuction_success_1();
+        uint128 amountIn = calculateAmountIn(
+            defaultAmount,
+            uint64(block.timestamp),
+            defaultDuration,
+            defaultStartPrice,
+            defaultEndPrice,
+            uint64(block.timestamp),
+            dutchAuction.decimals()
+        );
         vm.prank(alice);
         vm.expectEmit();
         emit DutchAuction.AuctionEndedEarly();
         vm.expectEmit();
-        emit DutchAuction.AuctionFilled(alice, defaultAmount, defaultStartPrice);
+        emit DutchAuction.AuctionFilled(alice, defaultAmount, amountIn);
         dutchAuction.fill(defaultAmount);
 
         (uint64 startTime, uint64 duration, uint128 startPrice, uint128 endPrice, uint128 amount) =
@@ -240,9 +249,18 @@ contract DutchAuctionTest is BaseTest {
     // fill less than the max amount
     function test_fill_success_2() public virtual {
         test_startAuction_success_1();
+        uint128 amountIn = calculateAmountIn(
+            defaultAmount - 1,
+            uint64(block.timestamp),
+            defaultDuration,
+            defaultStartPrice,
+            defaultEndPrice,
+            uint64(block.timestamp),
+            dutchAuction.decimals()
+        );
         vm.prank(alice);
         vm.expectEmit();
-        emit DutchAuction.AuctionFilled(alice, defaultAmount - 1, defaultStartPrice);
+        emit DutchAuction.AuctionFilled(alice, defaultAmount - 1, amountIn);
         dutchAuction.fill(defaultAmount - 1);
 
         (uint64 startTime, uint64 duration, uint128 startPrice, uint128 endPrice, uint128 amount) =
@@ -332,10 +350,10 @@ contract DutchAuctionTest is BaseTest {
         dutchAuction.fill(defaultAmount + 1);
     }
 
-    function test_fill_fillAmountZero() public {
+    function test_fill_AmountOutZero() public {
         test_startAuction_success_1();
         vm.prank(alice);
-        vm.expectRevert(DutchAuction.FillAmountZero.selector);
+        vm.expectRevert(DutchAuction.AmountOutZero.selector);
         dutchAuction.fill(0);
     }
 
@@ -392,8 +410,23 @@ contract DutchAuctionTest is BaseTest {
         assertTrue(!isActive, "auction active");
     }
 
+    function test_getAmountIn_success() public {
+        test_startAuction_success_1();
+        uint128 amountIn = dutchAuction.getAmountIn(defaultAmount, uint64(block.timestamp));
+        uint128 expectedAmountIn = calculateAmountIn(
+            defaultAmount,
+            uint64(block.timestamp),
+            defaultDuration,
+            defaultStartPrice,
+            defaultEndPrice,
+            uint64(block.timestamp),
+            dutchAuction.decimals()
+        );
+        assertEq(amountIn, expectedAmountIn, "amountIn not assigned correctly");
+    }
+
     function testFuzz_fill(
-        uint128 _amount,
+        uint128 _amountIn,
         uint64 _startTime,
         uint64 _duration,
         uint128 _startPrice,
@@ -401,26 +434,108 @@ contract DutchAuctionTest is BaseTest {
         uint64 _elapsedTime,
         uint128 _totalAmount
     ) public virtual {
-        vm.assume(_amount < _totalAmount);
-        vm.assume(_amount > 0);
-        vm.assume(_startTime > block.timestamp);
-        vm.assume(_startTime < block.timestamp + dutchAuction.MAX_START_TIME_WINDOW());
+        uint256 currentTime = block.timestamp;
+        // bound(_amountIn, 1, type(uint128).max);
+        vm.assume(_amountIn > 0);
+        // vm.assume(_amountIn < type(uint128).max / 1e18);
+        // bound(_startTime, currentTime, currentTime + _duration);
+        vm.assume(_startTime > currentTime);
+        vm.assume(_startTime < currentTime + _duration);
+        vm.assume(_startTime < currentTime + dutchAuction.MAX_START_TIME_WINDOW());
+        // bound(_duration, 1, maxDuration);
         vm.assume(_duration > 0);
         vm.assume(_duration < dutchAuction.MAX_DURATION());
-        vm.assume(_startPrice > 0);
+
+        bound(_startPrice, 1, type(uint128).max);
+        // vm.assume(_startPrice > 0);
+        vm.assume(_startPrice <= (type(uint128).max / defaultAmount));
+
         vm.assume(_endPrice > 0);
-        vm.assume(_startPrice >= _endPrice);
+        vm.assume(_endPrice <= _startPrice);
+
         vm.assume(_elapsedTime >= _startTime);
         vm.assume(_elapsedTime < _startTime + _duration);
-        vm.assume(_startPrice <= (type(uint128).max / _totalAmount));
-        uint64 delta_t = _duration - (_elapsedTime - _startTime);
-        uint128 delta_p = _startPrice - _endPrice;
-        if (delta_p == 0) {
-            delta_p = 1;
-        }
-        vm.assume(delta_t <= type(uint128).max / delta_p);
 
-        fill(_amount, _startTime, _duration, _startPrice, _endPrice, _elapsedTime, _totalAmount);
+        vm.assume(_totalAmount > 0);
+        // vm.assume(_totalAmount > _amount);
+        vm.assume(_totalAmount <= type(uint128).max / defaultStartPrice);
+
+        vm.assume(_startPrice < type(uint128).max / _totalAmount);
+
+        uint128 amountOut = calculateAmountOut(
+            _amountIn, _startTime, _duration, _startPrice, _endPrice, _elapsedTime, dutchAuction.decimals()
+        );
+        vm.assume(amountOut > 0);
+        vm.assume(amountOut < _totalAmount);
+
+        fill(amountOut, _startTime, _duration, _startPrice, _endPrice, _elapsedTime, _totalAmount);
+    }
+
+    function testFuzz_amount(uint128 _amount) public virtual {
+        vm.assume(_amount > 0);
+        vm.assume(_amount < defaultAmount);
+        uint64 currentTime = uint64(block.timestamp);
+        fill(_amount, currentTime, defaultDuration, defaultStartPrice, defaultEndPrice, currentTime, defaultAmount);
+    }
+
+    function testFuzz_startTime(uint64 _startTime) public virtual {
+        uint64 currentTime = uint64(block.timestamp);
+        vm.assume(_startTime > currentTime);
+        vm.assume(_startTime < currentTime + defaultDuration);
+        fill(
+            defaultAmount - 1,
+            _startTime,
+            defaultDuration,
+            defaultStartPrice,
+            defaultEndPrice,
+            _startTime,
+            defaultAmount
+        );
+    }
+
+    function testFuzz_duration(uint64 _duration) public virtual {
+        uint64 currentTime = uint64(block.timestamp);
+        vm.assume(_duration > 0);
+        vm.assume(_duration < dutchAuction.MAX_DURATION());
+        fill(defaultAmount - 1, currentTime, _duration, defaultStartPrice, defaultEndPrice, currentTime, defaultAmount);
+    }
+
+    function testFuzz_startPrice(uint128 _startPrice) public virtual {
+        vm.assume(_startPrice > 0);
+        vm.assume(_startPrice >= defaultEndPrice);
+        vm.assume(_startPrice <= (type(uint128).max / defaultAmount));
+        uint64 currentTime = uint64(block.timestamp);
+        fill(defaultAmount - 1, currentTime, defaultDuration, _startPrice, defaultEndPrice, currentTime, defaultAmount);
+    }
+
+    function testFuzz_endPrice(uint128 _endPrice) public virtual {
+        vm.assume(_endPrice > 0);
+        vm.assume(_endPrice <= defaultStartPrice);
+        uint64 currentTime = uint64(block.timestamp);
+        fill(defaultAmount - 1, currentTime, defaultDuration, defaultStartPrice, _endPrice, currentTime, defaultAmount);
+    }
+
+    function testFuzz_elapsedTime(uint64 _elapsedTime) public virtual {
+        uint64 currentTime = uint64(block.timestamp);
+        vm.assume(_elapsedTime > currentTime);
+        vm.assume(_elapsedTime < currentTime + defaultDuration);
+        fill(
+            defaultAmount - 1,
+            currentTime,
+            defaultDuration,
+            defaultStartPrice,
+            defaultEndPrice,
+            _elapsedTime,
+            defaultAmount
+        );
+    }
+
+    function testFuzz_totalAmount(uint128 _totalAmount) public virtual {
+        vm.assume(_totalAmount > 0);
+        vm.assume(_totalAmount > defaultAmount);
+        vm.assume(_totalAmount <= type(uint128).max / defaultStartPrice);
+        uint64 currentTime = uint64(block.timestamp);
+        fill(defaultAmount, currentTime, defaultDuration, defaultStartPrice, defaultEndPrice, currentTime, _totalAmount);
     }
 
     function fill(
@@ -454,17 +569,21 @@ contract DutchAuctionTest is BaseTest {
         assertEq(amount, _totalAmount, "amount not assigned correctly");
 
         vm.warp(_elapsedTime);
-        uint128 fillPrice = calculateFillPrice(_startTime, _duration, _startPrice, _endPrice, _elapsedTime);
+        uint128 amountIn = calculateAmountIn(
+            _amount, _startTime, _duration, _startPrice, _endPrice, _elapsedTime, dutchAuction.decimals()
+        );
+
         vm.prank(alice);
         vm.expectEmit();
-        emit DutchAuction.AuctionFilled(alice, _amount, fillPrice);
+        emit DutchAuction.AuctionFilled(alice, _amount, amountIn);
         dutchAuction.fill(_amount);
 
         (startTime, duration, startPrice, endPrice, amount) = dutchAuction.auction();
+        assertEq(amount, _totalAmount - _amount, "amount not assigned correctly");
+
         assertEq(startTime, _startTime, "startTime not assigned correctly");
         assertEq(duration, _duration, "duration not assigned correctly");
         assertEq(startPrice, _startPrice, "startPrice not assigned correctly");
         assertEq(endPrice, _endPrice, "endPrice not assigned correctly");
-        assertEq(amount, _totalAmount - _amount, "amount not assigned correctly");
     }
 }

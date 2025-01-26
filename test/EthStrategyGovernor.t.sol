@@ -6,7 +6,6 @@ import {EthStrategyGovernor} from "../../src/EthStrategyGovernor.sol";
 import {IGovernor} from "@openzeppelin/contracts/governance/IGovernor.sol";
 import {IVotes} from "@openzeppelin/contracts/governance/utils/IVotes.sol";
 import {DutchAuction} from "../../src/DutchAuction.sol";
-import {console} from "forge-std/console.sol";
 
 contract EthStrategyGovernorTest is BaseTest {
     DutchAuction dutchAuction;

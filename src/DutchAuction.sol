@@ -18,7 +18,8 @@ contract DutchAuction is OwnableRoles, TReentrancyGuard {
     error AmountExceedsSupply();
     error InvalidDuration();
     error AmountStartPriceOverflow();
-    error FillAmountZero();
+    error AmountOutZero();
+    error AmountInZero();
 
     struct Auction {
         uint64 startTime;
@@ -32,12 +33,13 @@ contract DutchAuction is OwnableRoles, TReentrancyGuard {
 
     address public immutable ethStrategy;
     address public immutable paymentToken;
-    uint8 constant decimals = 18;
+
+    uint8 public immutable decimals;
     uint64 public constant MAX_START_TIME_WINDOW = 7 days;
     uint64 public constant MAX_DURATION = 30 days;
 
     event AuctionStarted(Auction auction);
-    event AuctionFilled(address buyer, uint128 amount, uint128 price);
+    event AuctionFilled(address buyer, uint128 amountOut, uint128 amountIn);
     event AuctionEndedEarly();
     event AuctionCancelled();
 
@@ -47,6 +49,7 @@ contract DutchAuction is OwnableRoles, TReentrancyGuard {
         ethStrategy = _ethStrategy;
         paymentToken = _paymentToken;
         _initializeOwner(_governor);
+        decimals = ERC20(_ethStrategy).decimals();
     }
 
     function startAuction(uint64 _startTime, uint64 _duration, uint128 _startPrice, uint128 _endPrice, uint128 _amount)
@@ -91,36 +94,47 @@ contract DutchAuction is OwnableRoles, TReentrancyGuard {
         emit AuctionCancelled();
     }
 
-    function fill(uint128 _amount) public nonreentrant {
+    function fill(uint128 _amountOut) public {
         Auction memory _auction = auction;
         uint256 currentTime = block.timestamp;
         if (!_isAuctionActive(_auction, currentTime)) {
             revert AuctionNotActive();
         }
-        if (_amount == 0) {
-            revert FillAmountZero();
+        if (_amountOut == 0) {
+            revert AmountOutZero();
         }
-        if (_amount > _auction.amount) {
+        if (_amountOut > _auction.amount) {
             revert AmountExceedsSupply();
         }
         uint128 currentPrice = _getCurrentPrice(_auction, currentTime);
-        uint128 delta_amount = _auction.amount - _amount;
+        uint128 delta_amount = _auction.amount - _amountOut;
         if (delta_amount > 0) {
             auction.amount = delta_amount;
         } else {
             delete auction;
             emit AuctionEndedEarly();
         }
-        _fill(_amount, currentPrice, _auction.startTime, _auction.duration);
+        uint128 amountIn = _getAmountIn(_amountOut, currentPrice);
+        emit AuctionFilled(msg.sender, _amountOut, amountIn);
+        _fill(_amountOut, amountIn, _auction.startTime, _auction.duration);
     }
 
-    function _fill(uint128 amount, uint128 price, uint64 startTime, uint64 duration) internal virtual {
-        emit AuctionFilled(msg.sender, amount, price);
-    }
+    function _fill(uint128 amountOut, uint128 amountIn, uint64, uint64) internal virtual {}
 
     function _isAuctionActive(Auction memory _auction, uint256 currentTime) internal pure returns (bool) {
         return _auction.startTime > 0 && _auction.startTime + _auction.duration > currentTime
             && currentTime >= _auction.startTime;
+    }
+
+    function getAmountIn(uint128 amountOut, uint64 currentTime) external view returns (uint128 amountIn) {
+        Auction memory _auction = auction;
+        uint128 currentPrice = _getCurrentPrice(_auction, currentTime);
+        return _getAmountIn(amountOut, currentPrice);
+    }
+
+    function _getAmountIn(uint128 amountOut, uint128 currentPrice) internal view returns (uint128 amountIn) {
+        amountIn = uint128((amountOut * currentPrice) / 10 ** decimals);
+        return (amountIn == 0) ? 1 : amountIn;
     }
 
     function _getCurrentPrice(Auction memory _auction, uint256 currentTime) internal pure returns (uint128) {
