@@ -199,9 +199,9 @@ contract DepositTest is BaseTest {
   }
 
   function getSignature(address _to) public view returns (bytes memory) {
-    bytes32 hash = keccak256(abi.encode(_to));
+    bytes32 hash = keccak256(abi.encodePacked(_to));
     (uint8 v, bytes32 r, bytes32 s) = vm.sign(signer.key, hash);
-    return abi.encodePacked(v, r, s);
+    return abi.encodePacked(r, s, v);
   }
   
   function testFuzz_deposit(uint256 depositAmount, uint256 depositCap, uint256 conversionRate, uint256 conversionPremium) public {

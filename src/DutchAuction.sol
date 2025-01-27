@@ -3,11 +3,12 @@ pragma solidity ^0.8.13;
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {OwnableRoles} from "solady/src/auth/OwnableRoles.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
+import {TReentrancyGuard} from "../lib/TReentrancyGuard/src/TReentrancyGuard.sol";
 interface IEthStrategy {
     function mint(address _to, uint256 _amount) external;
 }
 
-contract DutchAuction is OwnableRoles {
+contract DutchAuction is OwnableRoles, TReentrancyGuard {
     error InvalidStartTime();
     error AuctionAlreadyActive();
     error AuctionNotActive();
@@ -93,7 +94,7 @@ contract DutchAuction is OwnableRoles {
         emit AuctionCancelled();
     }
 
-    function fill(uint128 _amount) public {
+    function fill(uint128 _amount) public nonreentrant {
         Auction memory _auction = auction;
         uint256 currentTime = block.timestamp;
         if (!_isAuctionActive(_auction, currentTime)) {

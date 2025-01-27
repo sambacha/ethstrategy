@@ -4,7 +4,9 @@ import {Ownable} from "solady/src/auth/Ownable.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {IEthStrategy} from "./DutchAuction.sol";
 import {SignatureCheckerLib} from "solady/src/utils/SignatureCheckerLib.sol";
-contract Deposit is Ownable {
+import {TReentrancyGuard} from "../lib/TReentrancyGuard/src/TReentrancyGuard.sol";
+
+contract Deposit is Ownable, TReentrancyGuard {
 
   uint256 public immutable CONVERSION_RATE;
   uint256 constant MIN_DEPOSIT = 1e18;
@@ -57,7 +59,7 @@ contract Deposit is Ownable {
     if (hasRedeemed[msg.sender]) revert AlreadyRedeemed();
     hasRedeemed[msg.sender] = true;
 
-    bytes32 hash = keccak256(abi.encode(msg.sender));
+    bytes32 hash = keccak256(abi.encodePacked(msg.sender));
     if (!SignatureCheckerLib.isValidSignatureNow(signer, hash, signature)) revert InvalidSignature();
 
     if (value < MIN_DEPOSIT) revert DepositAmountTooLow();
