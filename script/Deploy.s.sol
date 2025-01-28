@@ -56,20 +56,24 @@ contract Deploy is Script {
 
     vm.stopBroadcast();
 
-    string memory deployments = "deployments";
+    string memory deployed = "deployed";
+    string memory deployedConfig = "deployedConfig";
 
-    vm.serializeAddress(deployments, "EthStrategy", address(ethStrategy));
-    vm.serializeAddress(deployments, "EthStrategyGovernor", address(ethStrategyGovernor));
-    vm.serializeAddress(deployments, "AtmAuction", address(atmAuction));
-    vm.serializeAddress(deployments, "BondAuction", address(bondAuction));
-    vm.serializeUint(deployments, "startBlock", block.number);
-    vm.serializeAddress(deployments, "lst", config.lst);
-    vm.serializeUint(deployments, "proposalThreshold", config.proposalThreshold);
-    vm.serializeUint(deployments, "quorumPercentage", config.quorumPercentage);
-    vm.serializeAddress(deployments, "usdc", config.usdc);
-    vm.serializeUint(deployments, "votingDelay", config.votingDelay);
-    string memory output = vm.serializeUint(deployments, "votingPeriod", config.votingPeriod);
+    vm.serializeAddress(deployed, "EthStrategy", address(ethStrategy));
+    vm.serializeAddress(deployed, "EthStrategyGovernor", address(ethStrategyGovernor));
+    vm.serializeAddress(deployed, "AtmAuction", address(atmAuction));
+    string memory deployedOutput = vm.serializeAddress(deployed, "BondAuction", address(bondAuction));
+    vm.writeJson(deployedOutput, "./out/deployed.json");
 
-    vm.writeJson(output, "./out/deployments.json");
+    vm.serializeUint(deployedConfig, "startBlock", block.number);
+    vm.serializeAddress(deployedConfig, "lst", config.lst);
+    vm.serializeUint(deployedConfig, "proposalThreshold", config.proposalThreshold);
+    vm.serializeUint(deployedConfig, "quorumPercentage", config.quorumPercentage);
+    vm.serializeAddress(deployedConfig, "usdc", config.usdc);
+    vm.serializeUint(deployedConfig, "votingDelay", config.votingDelay);
+    vm.serializeAddress(deployedConfig, "ethStrategyInitialOwner", publicKey);
+    string memory deployedConfigOutput = vm.serializeUint(deployedConfig, "votingPeriod", config.votingPeriod);
+
+    vm.writeJson(deployedConfigOutput, "./out/deployed.config.json");
   }
 }
