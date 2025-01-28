@@ -88,10 +88,6 @@ contract Deposit is Ownable, TReentrancyGuard {
     signer = _signer;
   }
 
-  fallback() external payable {
-    revert InvalidCall();
-  }
-
   receive() external payable {
     revert InvalidCall();
   }

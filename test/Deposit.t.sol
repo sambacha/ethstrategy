@@ -198,6 +198,13 @@ contract DepositTest is BaseTest {
     assertEq(deposit.signer(), signer.addr, "signer incorrect");
   }
 
+  function test_receive_InvalidCall() public {
+    vm.deal(alice, 1e18);
+    vm.prank(alice);
+    vm.expectRevert(Deposit.InvalidCall.selector);
+    payable(address(deposit)).call{value: 1e18}("");
+  }
+
   function getSignature(address _to) public view returns (bytes memory) {
     bytes32 hash = keccak256(abi.encodePacked(_to));
     (uint8 v, bytes32 r, bytes32 s) = vm.sign(signer.key, hash);

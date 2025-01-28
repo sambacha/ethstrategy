@@ -20,8 +20,8 @@ contract Deploy is Script {
 
   struct Config {
     uint256 depositCap;
-    uint256 depositConversionRate;
     uint256 depositConversionPremium;
+    uint256 depositConversionRate;
     address depositSigner;
     address lst;
     uint256 proposalThreshold;
@@ -45,6 +45,10 @@ contract Deploy is Script {
     console2.log("quorumPercentage: ", config.quorumPercentage);
     console2.log("lst: ", config.lst);
     console2.log("usdc: ", config.usdc);
+    console2.log("depositCap: ", config.depositCap);
+    console2.log("depositConversionRate: ", config.depositConversionRate);
+    console2.log("depositConversionPremium: ", config.depositConversionPremium);
+    console2.log("depositSigner: ", config.depositSigner);
 
     vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
     address publicKey = vm.addr(vm.envUint("PRIVATE_KEY"));
