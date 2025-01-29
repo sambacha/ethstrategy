@@ -50,7 +50,7 @@ contract Deposit is Ownable, TReentrancyGuard {
 
   /// @notice deposit eth and mint ethstrategy
   /// @param signature the signature of the signer for the depositor
-  function deposit(bytes calldata signature) external payable {
+  function deposit(bytes calldata signature) external payable nonreentrant {
     uint256 value = msg.value;
     uint256 _depositCap = depositCap_;
     if (value > _depositCap) revert DepositCapExceeded();
