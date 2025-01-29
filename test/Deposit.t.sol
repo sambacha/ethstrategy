@@ -10,6 +10,7 @@ import {console} from "forge-std/console.sol";
 import {Deposit} from "../../src/Deposit.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {Ownable} from "solady/src/auth/Ownable.sol";
+import {TReentrancyGuard} from "../../lib/TReentrancyGuard/src/TReentrancyGuard.sol";
 contract DepositTest is BaseTest {
 
   DutchAuction dutchAuction;
@@ -172,6 +173,19 @@ contract DepositTest is BaseTest {
     assertEq(address(deposit).balance, 0, "deposit balance incorrect");
   }
 
+  function test_deposit_ReentrancyForbidden() public {
+    ReentrantDeposit reentrantDeposit = new ReentrantDeposit(deposit);
+    vm.prank(address(governor));
+    deposit.transferOwnership(address(reentrantDeposit));
+    uint256 depositAmount = 1e18;
+    bytes memory signature = getSignature(alice);
+    vm.deal(alice, depositAmount);
+    vm.startPrank(alice);
+    vm.expectRevert(Deposit.DepositFailed.selector);
+    deposit.deposit{value: depositAmount}(signature);
+    vm.stopPrank();
+  }
+
   function test_deposit_InvalidConversionPremium() public {
     uint256 conversionPremium = 100_01;
     vm.expectRevert(Deposit.InvalidConversionPremium.selector);
@@ -253,5 +267,15 @@ contract OwnerDepositRejector {
   error Rejected();
   fallback() external payable {
     revert Rejected();
+  }
+}
+
+contract ReentrantDeposit {
+  Deposit deposit;
+  constructor(Deposit _deposit) {
+    deposit = _deposit;
+  }
+  fallback() external payable {
+    deposit.deposit{value: msg.value}(new bytes(0));
   }
 }
