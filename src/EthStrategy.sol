@@ -6,6 +6,9 @@ import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 
 contract EthStrategy is ERC20Votes, OwnableRoles {
     uint8 public constant MINTER_ROLE = 1;
+    uint8 public constant PAUSER_ROLE = 2;
+    bool public isTransferPaused = true;
+    error TransferPaused();
     constructor(address _governor) {
         _initializeOwner(_governor);
     }
@@ -23,6 +26,16 @@ contract EthStrategy is ERC20Votes, OwnableRoles {
 
     function getPastTotalSupply(uint256 timepoint) public view virtual returns (uint256) {
         return getPastVotesTotalSupply(timepoint);
+    }
+
+    function _beforeTokenTransfer(address from, address, uint256) internal virtual override {
+        if(from != address(0) && isTransferPaused) {
+            revert TransferPaused();
+        }
+    }
+
+    function setIsTransferPaused(bool _isTransferPaused) public onlyOwnerOrRoles(PAUSER_ROLE) {
+        isTransferPaused = _isTransferPaused;
     }
 }
 
