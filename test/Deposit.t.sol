@@ -42,7 +42,8 @@ contract DepositTest is BaseTest {
       signer.addr,
       defaultConversionRate,
       defaultConversionPremium,
-      defaultDepositCap
+      defaultDepositCap,
+      true
     );
     vm.startPrank(address(governor));
     ethStrategy.grantRoles(address(dutchAuction), ethStrategy.MINTER_ROLE());
@@ -66,6 +67,33 @@ contract DepositTest is BaseTest {
     assertEq(ethStrategy.balanceOf(alice),  conversionRate * depositAmount, "balance of alice incorrect");
     assertEq(deposit.depositCap(), defaultDepositCap - depositAmount, "deposit cap incorrect");
     assertEq(deposit.hasRedeemed(alice), true, "alice hasn't redeemed");
+    assertEq(address(governor).balance, depositAmount, "governor balance incorrect");
+  }
+
+  function test_deposit_success_whiteListDisabled() public {
+    deposit = new Deposit(
+      address(governor),
+      address(ethStrategy),
+      signer.addr,
+      defaultConversionRate,
+      defaultConversionPremium,
+      defaultDepositCap,
+      false
+    );
+    vm.startPrank(address(governor));
+    ethStrategy.grantRoles(address(deposit), ethStrategy.MINTER_ROLE());
+    vm.stopPrank();
+    uint256 depositAmount = 1e18;
+    vm.deal(alice, depositAmount);
+    vm.startPrank(alice);
+    vm.expectEmit();
+    emit ERC20.Transfer(address(0), alice, depositAmount * deposit.CONVERSION_RATE());
+    deposit.deposit{value: depositAmount}(new bytes(0));
+    vm.stopPrank();
+
+    uint256 conversionRate = deposit.CONVERSION_RATE();
+    assertEq(ethStrategy.balanceOf(alice),  conversionRate * depositAmount, "balance of alice incorrect");
+    assertEq(deposit.depositCap(), defaultDepositCap - depositAmount, "deposit cap incorrect");
     assertEq(address(governor).balance, depositAmount, "governor balance incorrect");
   }
 
@@ -195,7 +223,8 @@ contract DepositTest is BaseTest {
       signer.addr,
       defaultConversionRate,
       conversionPremium,
-      defaultDepositCap
+      defaultDepositCap,
+      true
     );
   }
 
@@ -239,7 +268,8 @@ contract DepositTest is BaseTest {
       signer.addr,
       conversionRate,
       conversionPremium,
-      depositCap
+      depositCap,
+      true
     );
 
     vm.startPrank(address(governor));
