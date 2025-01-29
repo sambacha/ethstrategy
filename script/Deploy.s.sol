@@ -29,6 +29,7 @@ contract Deploy is Script {
     address usdc;
     uint256 votingDelay;
     uint256 votingPeriod;
+    bool whiteListEnabled;
   }
 
   function run() public { 
@@ -58,7 +59,7 @@ contract Deploy is Script {
     EthStrategyGovernor ethStrategyGovernor = new EthStrategyGovernor(IVotes(address(ethStrategy)), config.quorumPercentage, config.votingDelay, config.votingPeriod, config.proposalThreshold);
     AtmAuction atmAuction = new AtmAuction(address(ethStrategy), address(ethStrategyGovernor), config.lst);
     BondAuction bondAuction = new BondAuction(address(ethStrategy), address(ethStrategyGovernor), config.usdc);
-    Deposit deposit = new Deposit(address(ethStrategyGovernor), address(ethStrategy), config.depositSigner, config.depositConversionRate, config.depositConversionPremium, config.depositCap);
+    Deposit deposit = new Deposit(address(ethStrategyGovernor), address(ethStrategy), config.depositSigner, config.depositConversionRate, config.depositConversionPremium, config.depositCap, config.whiteListEnabled);
 
     ethStrategy.grantRoles(address(atmAuction), ethStrategy.MINTER_ROLE());
     ethStrategy.grantRoles(address(bondAuction), ethStrategy.MINTER_ROLE());
