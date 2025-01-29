@@ -27,7 +27,7 @@ contract Deposit is Ownable, TReentrancyGuard {
   mapping(address => bool) public hasRedeemed;
 
   uint256 public immutable conversionPremium;
-  uint256 public constant DENOMIATOR_BP = 100_00;
+  uint256 public constant DENOMINATOR_BP = 100_00;
 
   uint256 private depositCap_;
 
@@ -39,7 +39,7 @@ contract Deposit is Ownable, TReentrancyGuard {
   /// @param _conversionPremium the conversion premium in basis points (0 - 100_00)
   /// @param _depositCap the maximum global deposit cap
   constructor(address _owner, address _ethStrategy, address _signer, uint256 _conversionRate,uint256 _conversionPremium, uint256 _depositCap) {
-    if(_conversionPremium > DENOMIATOR_BP) revert InvalidConversionPremium();
+    if(_conversionPremium > DENOMINATOR_BP) revert InvalidConversionPremium();
     CONVERSION_RATE = _conversionRate;
     _initializeOwner(_owner);
     ethStrategy = _ethStrategy;
@@ -66,7 +66,7 @@ contract Deposit is Ownable, TReentrancyGuard {
     if (value > MAX_DEPOSIT) revert DepositAmountTooHigh();
 
     uint256 amount = msg.value * CONVERSION_RATE;
-    amount = amount * (DENOMIATOR_BP - conversionPremium) / DENOMIATOR_BP;
+    amount = amount * (DENOMINATOR_BP - conversionPremium) / DENOMINATOR_BP;
 
     address payable recipient = payable(owner());
     (bool success, ) = recipient.call{value: msg.value}("");

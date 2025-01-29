@@ -218,7 +218,7 @@ contract DepositTest is BaseTest {
     conversionRate = bound(conversionRate, 1, defaultConversionRate);
     vm.assume(depositAmount <= depositCap);
 
-    uint256 DENOMIATOR_BP = deposit.DENOMIATOR_BP();
+    uint256 DENOMINATOR_BP = deposit.DENOMINATOR_BP();
     deposit = new Deposit(
       address(governor),
       address(ethStrategy),
@@ -236,14 +236,14 @@ contract DepositTest is BaseTest {
     vm.deal(alice, depositAmount);
     vm.startPrank(alice);
     vm.expectEmit();
-    emit ERC20.Transfer(address(0), alice, (depositAmount * deposit.CONVERSION_RATE() * (DENOMIATOR_BP - conversionPremium)) / DENOMIATOR_BP);
+    emit ERC20.Transfer(address(0), alice, (depositAmount * deposit.CONVERSION_RATE() * (DENOMINATOR_BP - conversionPremium)) / DENOMINATOR_BP);
     deposit.deposit{value: depositAmount}(signature);
     vm.stopPrank();
 
     assertEq(deposit.depositCap(), depositCap - depositAmount, "deposit cap incorrect");
     assertEq(deposit.hasRedeemed(alice), true, "alice has redeemed");
     assertEq(address(governor).balance, depositAmount, "governor balance incorrect");
-    assertEq(ethStrategy.balanceOf(alice), (depositAmount * deposit.CONVERSION_RATE() * (DENOMIATOR_BP - conversionPremium)) / DENOMIATOR_BP, "alice balance incorrect");
+    assertEq(ethStrategy.balanceOf(alice), (depositAmount * deposit.CONVERSION_RATE() * (DENOMINATOR_BP - conversionPremium)) / DENOMINATOR_BP, "alice balance incorrect");
     assertEq(address(deposit).balance, 0, "deposit balance incorrect");
   }
 }
