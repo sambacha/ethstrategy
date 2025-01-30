@@ -20,14 +20,15 @@ contract Deposit is Ownable, TReentrancyGuard {
   error InvalidConversionPremium();
   error InvalidSignature();
   error InvalidCall();
-
+  error DepositNotStarted();
+  
   address public immutable ethStrategy;
   address public signer;
 
   mapping(address => bool) public hasRedeemed;
 
   uint256 public immutable conversionPremium;
-  bool public immutable whiteListEnabled;
+  uint64 public immutable startTime;
   uint256 public constant DENOMINATOR_BP = 100_00;
 
   uint256 private depositCap_;
@@ -35,12 +36,11 @@ contract Deposit is Ownable, TReentrancyGuard {
   /// @notice constructor
   /// @param _owner the owner of the deposit contract
   /// @param _ethStrategy the address of the ethstrategy token
-  /// @param _signer the address of the signer
+  /// @param _signer the address of the signer (if signer is set, whitelist is enabled)
   /// @param _conversionRate the conversion rate from eth to ethstrategy
   /// @param _conversionPremium the conversion premium in basis points (0 - 100_00)
   /// @param _depositCap the maximum global deposit cap
-  /// @param _whiteListEnabled whether the whitelist is enabled
-  constructor(address _owner, address _ethStrategy, address _signer, uint256 _conversionRate,uint256 _conversionPremium, uint256 _depositCap, bool _whiteListEnabled) {
+  constructor(address _owner, address _ethStrategy, address _signer, uint256 _conversionRate,uint256 _conversionPremium, uint256 _depositCap, uint64 _startTime) {
     if(_conversionPremium > DENOMINATOR_BP) revert InvalidConversionPremium();
     CONVERSION_RATE = _conversionRate;
     _initializeOwner(_owner);
@@ -48,18 +48,19 @@ contract Deposit is Ownable, TReentrancyGuard {
     signer = _signer;
     conversionPremium = _conversionPremium;
     depositCap_ = _depositCap;
-    whiteListEnabled = _whiteListEnabled;
+    startTime = _startTime;
   }
 
   /// @notice deposit eth and mint ethstrategy
   /// @param signature the signature of the signer for the depositor
   function deposit(bytes calldata signature) external payable nonreentrant {
+    if (block.timestamp < startTime) revert DepositNotStarted();
     uint256 value = msg.value;
     uint256 _depositCap = depositCap_;
     if (value > _depositCap) revert DepositCapExceeded();
     depositCap_ = _depositCap - value;
-
-    if (whiteListEnabled) {
+  
+    if (signer != address(0)) {
       if (hasRedeemed[msg.sender]) revert AlreadyRedeemed();
       hasRedeemed[msg.sender] = true;
 

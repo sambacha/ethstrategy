@@ -1,13 +1,21 @@
 {
-  "depositCap": 10000000000000000000000,
-  "depositConversionPremium": 0,
-  "depositConversionRate": 30000,
-  "depositSigner": "0x0000000000000000000000000000000000000001",
-  "lst": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0",
-  "proposalThreshold": 0,
-  "quorumPercentage": 4,
-  "usdc": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-  "votingDelay": 7200,
-  "votingPeriod": 50400,
-  "whiteListEnabled": false
+  "atmAuction": {
+    "lst": "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0"
+  },
+  "bondAuction": {
+    "usdc": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48"
+  },
+  "deposit": {
+    "cap": 10000000000000000000000,
+    "conversionPremium": 0,
+    "conversionRate": 30000,
+    "signer": "0x0000000000000000000000000000000000000001",
+    "startTime": 1738274400
+  },
+  "governor": {
+    "proposalThreshold": 0,
+    "quorumPercentage": 4,
+    "votingDelay": 7200,
+    "votingPeriod": 50400
+  }
 }
