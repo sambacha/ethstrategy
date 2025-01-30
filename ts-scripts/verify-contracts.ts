@@ -13,7 +13,7 @@ const getCompilerVersion = async(contractName: string):Promise<string> => {
 }
 
 const getContractAddresses = async () => {
-  const data = await fs.readFile('./out/deployed.json')
+  const data = await fs.readFile('./out/deployments.json')
   const addresses = JSON.parse(data);
   console.log(addresses);
 
@@ -24,7 +24,7 @@ const getContractAddresses = async () => {
 }
 
 const getContractAddressesMap = async () => {
-  const data = await fs.readFile('./out/deployed.json')
+  const data = await fs.readFile('./out/deployments.json')
   return JSON.parse(data);
 }
 
@@ -50,7 +50,7 @@ const verifyContract = async(
 
   const addressesMap = await getContractAddressesMap();
   const compilerVersion = await getCompilerVersion(contractName)
-  let command = `forge verify-contract ${address} ${contractName} --compiler-version ${compilerVersion} --watch --verifier etherscan`;
+  let command = `forge verify-contract ${address} ${contractName} --compiler-version ${compilerVersion} --watch --verifier etherscan --etherscan-api-key ${process.env.ETHERSCAN_API_KEY} --chain-id ${process.env.CHAIN_ID} --rpc-url ${process.env.RPC_URL}`;
 
   if (contractName === 'AtmAuction') {
     command += ` --constructor-args $(cast abi-encode "constructor(address,address,address)" ${addressesMap.EthStrategy} ${addressesMap.EthStrategyGovernor} ${config.lst} )`;
@@ -61,11 +61,15 @@ const verifyContract = async(
   }
 
   if (contractName === 'EthStrategy') {
-    command += ` --constructor-args $(cast abi-encode "constructor(address)" ${config.ethStrategyInitialOwner} )`;
+    command += ` --constructor-args $(cast abi-encode "constructor(address)" ${config.deployer} )`;
   }
 
   if (contractName === 'EthStrategyGovernor') {
     command += ` --constructor-args $(cast abi-encode "constructor(address,uint256,uint256,uint256,uint256)" ${addressesMap.EthStrategy} ${config.quorumPercentage} ${config.votingDelay} ${config.votingPeriod} ${config.proposalThreshold} )`;
+  }
+
+  if (contractName === 'Deposit') {
+    command += ` --constructor-args $(cast abi-encode "constructor(address,address,address,uint256,uint256,uint256,uint64)" ${config.deployer} ${addressesMap.EthStrategy} ${config.DepositSigner} ${config.DepositConversionRate} ${config.DepositConversionPremium} ${BigInt(config.DepositCap).toString()} ${config.startTime} )`;
   }
 
   exec(command, (err, stdout) => {
