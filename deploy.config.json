@@ -9,8 +9,8 @@
     "cap": 10000000000000000000000,
     "conversionPremium": 0,
     "conversionRate": 30000,
-    "signer": "0x0000000000000000000000000000000000000001",
-    "startTime": 1738274400
+    "signer": "0xE0E763117E4ff89eEbeFCC4856C1019dd5637452",
+    "startTime": 1738228202
   },
   "governor": {
     "proposalThreshold": 0,
