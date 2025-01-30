@@ -7,7 +7,9 @@
     "report": "forge coverage --report lcov && genhtml -o report --branch-coverage lcov.info",
     "deploy:test": "dotenv -e .env -- bash -c 'forge script script/Deploy.s.sol --chain-id \"$CHAIN_ID\" --rpc-url \"$RPC_URL\" --private-key \"$PRIVATE_KEY\"'",
     "deploy:prod": "dotenv -e .env -- bash -c 'forge script script/Deploy.s.sol --chain-id \"$CHAIN_ID\" --rpc-url \"$RPC_URL\" --private-key \"$PRIVATE_KEY\" --broadcast'",
-    "verify": "dotenv -e .env -- bash -c 'tsx ts-scripts/verify-contracts.ts'"
+    "deploy:deposit:test": "dotenv -e .env -- bash -c 'forge script script/DeployDeposit.s.sol --chain-id \"$CHAIN_ID\" --rpc-url \"$RPC_URL\" --private-key \"$PRIVATE_KEY\"'",
+    "deploy:deposit:prod": "dotenv -e .env -- bash -c 'forge script script/DeployDeposit.s.sol --chain-id \"$CHAIN_ID\" --rpc-url \"$RPC_URL\" --private-key \"$PRIVATE_KEY\" --broadcast'",
+    "verify": "dotenv -e .env -- bash -c 'tsx ts-scripts/verify-contracts.ts -P ./'"
   },
   "keywords": [],
   "author": "",

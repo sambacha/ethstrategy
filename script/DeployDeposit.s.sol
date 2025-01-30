@@ -62,26 +62,16 @@ contract Deploy is Script {
     console2.log("publicKey: ", publicKey);
 
     EthStrategy ethStrategy = new EthStrategy(publicKey);
-    EthStrategyGovernor ethStrategyGovernor = new EthStrategyGovernor(IVotes(address(ethStrategy)), config.governor.quorumPercentage, config.governor.votingDelay, config.governor.votingPeriod, config.governor.proposalThreshold);
-    AtmAuction atmAuction = new AtmAuction(address(ethStrategy), address(ethStrategyGovernor), config.atmAuction.lst);
-    BondAuction bondAuction = new BondAuction(address(ethStrategy), address(ethStrategyGovernor), config.bondAuction.usdc);
-    Deposit deposit = new Deposit(address(ethStrategyGovernor), address(ethStrategy), config.deposit.signer, config.deposit.conversionRate, config.deposit.conversionPremium, config.deposit.cap, config.deposit.startTime);
+    Deposit deposit = new Deposit(publicKey, address(ethStrategy), config.deposit.signer, config.deposit.conversionRate, config.deposit.conversionPremium, config.deposit.cap, config.deposit.startTime);
 
-    ethStrategy.grantRoles(address(atmAuction), ethStrategy.MINTER_ROLE());
-    ethStrategy.grantRoles(address(bondAuction), ethStrategy.MINTER_ROLE());
     ethStrategy.grantRoles(address(deposit), ethStrategy.MINTER_ROLE());
     ethStrategy.mint(publicKey, 1);
-    
-    ethStrategy.transferOwnership(address(ethStrategyGovernor));
 
     vm.stopBroadcast();
 
     string memory deployments = "deployments";
 
     vm.serializeAddress(deployments, "EthStrategy", address(ethStrategy));
-    vm.serializeAddress(deployments, "EthStrategyGovernor", address(ethStrategyGovernor));
-    vm.serializeAddress(deployments, "AtmAuction", address(atmAuction));
-    vm.serializeAddress(deployments, "BondAuction", address(bondAuction));
     string memory deploymentsJson = vm.serializeAddress(deployments, "Deposit", address(deposit));
 
     string memory deployedConfig = "config";

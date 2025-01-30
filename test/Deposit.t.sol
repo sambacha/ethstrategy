@@ -43,7 +43,7 @@ contract DepositTest is BaseTest {
       defaultConversionRate,
       defaultConversionPremium,
       defaultDepositCap,
-      true
+      uint64(block.timestamp)
     );
     vm.startPrank(address(governor));
     ethStrategy.grantRoles(address(dutchAuction), ethStrategy.MINTER_ROLE());
@@ -74,11 +74,11 @@ contract DepositTest is BaseTest {
     deposit = new Deposit(
       address(governor),
       address(ethStrategy),
-      signer.addr,
+      address(0),
       defaultConversionRate,
       defaultConversionPremium,
       defaultDepositCap,
-      false
+      uint64(block.timestamp)
     );
     vm.startPrank(address(governor));
     ethStrategy.grantRoles(address(deposit), ethStrategy.MINTER_ROLE());
@@ -95,6 +95,28 @@ contract DepositTest is BaseTest {
     assertEq(ethStrategy.balanceOf(alice),  conversionRate * depositAmount, "balance of alice incorrect");
     assertEq(deposit.depositCap(), defaultDepositCap - depositAmount, "deposit cap incorrect");
     assertEq(address(governor).balance, depositAmount, "governor balance incorrect");
+  }
+
+  function test_deposit_DepositNotStarted() public {
+    deposit = new Deposit(
+      address(governor),
+      address(ethStrategy),
+      address(0),
+      defaultConversionRate,
+      defaultConversionPremium,
+      defaultDepositCap,
+      uint64(block.timestamp + 1)
+    );
+    vm.startPrank(address(governor));
+    ethStrategy.grantRoles(address(deposit), ethStrategy.MINTER_ROLE());
+    vm.stopPrank();
+    uint256 depositAmount = 1e18;
+    bytes memory signature = getSignature(alice);
+    vm.deal(alice, depositAmount);
+    vm.startPrank(alice);
+    vm.expectRevert(Deposit.DepositNotStarted.selector);
+    deposit.deposit{value: depositAmount}(signature);
+    vm.stopPrank();
   }
 
   function test_deposit_DepositCapExceeded() public {
@@ -224,7 +246,7 @@ contract DepositTest is BaseTest {
       defaultConversionRate,
       conversionPremium,
       defaultDepositCap,
-      true
+      uint64(block.timestamp)
     );
   }
 
@@ -269,7 +291,7 @@ contract DepositTest is BaseTest {
       conversionRate,
       conversionPremium,
       depositCap,
-      true
+      uint64(block.timestamp)
     );
 
     vm.startPrank(address(governor));
