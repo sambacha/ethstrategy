@@ -1,6 +1,6 @@
 pragma solidity ^0.8.0;
 
-import {console2} from "forge-std/console2.sol";  
+import {console2} from "forge-std/console2.sol";
 import {Script} from "forge-std/Script.sol";
 import {AtmAuction} from "../src/AtmAuction.sol";
 import {BondAuction} from "../src/BondAuction.sol";
@@ -11,88 +11,98 @@ import {Deposit} from "../src/Deposit.sol";
 import {console} from "forge-std/console.sol";
 
 contract Deploy is Script {
+    struct Config {
+        AtmAuctionConfig atmAuction;
+        BondAuctionConfig bondAuction;
+        DepositConfig deposit;
+        GovernorConfig governor;
+    }
 
-  struct Config {
-    AtmAuctionConfig atmAuction;
-    BondAuctionConfig bondAuction;
-    DepositConfig deposit;
-    GovernorConfig governor;
-  }
-  struct AtmAuctionConfig {
-    address lst;
-  }
-  struct BondAuctionConfig {
-    address usdc;
-  }
-  struct GovernorConfig {
-    uint256 proposalThreshold;
-    uint256 quorumPercentage;
-    uint256 votingDelay;
-    uint256 votingPeriod;
-  }
-  struct DepositConfig {
-    uint256 cap;
-    uint256 conversionPremium;
-    uint256 conversionRate;
-    address signer;
-    uint64 startTime;
-  }
+    struct AtmAuctionConfig {
+        address lst;
+    }
 
-  function run() public { 
+    struct BondAuctionConfig {
+        address usdc;
+    }
 
-    string memory root = vm.projectRoot();
-    string memory path = string.concat(root, "/deploy.config.json");
-    string memory json = vm.readFile(path);
-    bytes memory data = vm.parseJson(json);
-    Config memory config = abi.decode(data, (Config));
+    struct GovernorConfig {
+        uint256 proposalThreshold;
+        uint256 quorumPercentage;
+        uint256 votingDelay;
+        uint256 votingPeriod;
+    }
 
-    console2.log("votingDelay: ", config.governor.votingDelay);
-    console2.log("votingPeriod: ", config.governor.votingPeriod);
-    console2.log("proposalThreshold: ", config.governor.proposalThreshold);
-    console2.log("quorumPercentage: ", config.governor.quorumPercentage);
-    console2.log("lst: ", config.atmAuction.lst);
-    console2.log("usdc: ", config.bondAuction.usdc);
-    console2.log("depositCap: ", config.deposit.cap);
-    console2.log("depositConversionRate: ", config.deposit.conversionRate);
-    console2.log("depositConversionPremium: ", config.deposit.conversionPremium);
-    console2.log("depositSigner: ", config.deposit.signer);
+    struct DepositConfig {
+        uint256 cap;
+        uint256 conversionPremium;
+        uint256 conversionRate;
+        address signer;
+        uint64 startTime;
+    }
 
-    vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
-    address publicKey = vm.addr(vm.envUint("PRIVATE_KEY"));
-    console2.log("publicKey: ", publicKey);
+    function run() public {
+        string memory root = vm.projectRoot();
+        string memory path = string.concat(root, "/deploy.config.json");
+        string memory json = vm.readFile(path);
+        bytes memory data = vm.parseJson(json);
+        Config memory config = abi.decode(data, (Config));
 
-    EthStrategy ethStrategy = new EthStrategy(publicKey);
-    Deposit deposit = new Deposit(publicKey, address(ethStrategy), config.deposit.signer, config.deposit.conversionRate, config.deposit.conversionPremium, config.deposit.cap, config.deposit.startTime);
+        console2.log("votingDelay: ", config.governor.votingDelay);
+        console2.log("votingPeriod: ", config.governor.votingPeriod);
+        console2.log("proposalThreshold: ", config.governor.proposalThreshold);
+        console2.log("quorumPercentage: ", config.governor.quorumPercentage);
+        console2.log("lst: ", config.atmAuction.lst);
+        console2.log("usdc: ", config.bondAuction.usdc);
+        console2.log("depositCap: ", config.deposit.cap);
+        console2.log("depositConversionRate: ", config.deposit.conversionRate);
+        console2.log("depositConversionPremium: ", config.deposit.conversionPremium);
+        console2.log("depositSigner: ", config.deposit.signer);
 
-    ethStrategy.grantRoles(address(deposit), ethStrategy.MINTER_ROLE());
-    ethStrategy.mint(publicKey, 1);
+        vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
+        address publicKey = vm.addr(vm.envUint("PRIVATE_KEY"));
+        console2.log("publicKey: ", publicKey);
 
-    vm.stopBroadcast();
+        EthStrategy ethStrategy = new EthStrategy(publicKey);
+        Deposit deposit = new Deposit(
+            publicKey,
+            address(ethStrategy),
+            config.deposit.signer,
+            config.deposit.conversionRate,
+            config.deposit.conversionPremium,
+            config.deposit.cap,
+            config.deposit.startTime
+        );
 
-    string memory deployments = "deployments";
+        ethStrategy.grantRoles(address(deposit), ethStrategy.MINTER_ROLE());
+        ethStrategy.mint(publicKey, 1);
 
-    vm.serializeAddress(deployments, "EthStrategy", address(ethStrategy));
-    string memory deploymentsJson = vm.serializeAddress(deployments, "Deposit", address(deposit));
+        vm.stopBroadcast();
 
-    string memory deployedConfig = "config";
-    vm.serializeAddress(deployedConfig, "deployer", publicKey);
-    vm.serializeUint(deployedConfig, "DepositCap", config.deposit.cap);
-    vm.serializeUint(deployedConfig, "DepositConversionRate", config.deposit.conversionRate);
-    vm.serializeUint(deployedConfig, "DepositConversionPremium", config.deposit.conversionPremium);
-    vm.serializeAddress(deployedConfig, "DepositSigner", config.deposit.signer);
-    vm.serializeUint(deployedConfig, "startBlock", block.number);
-    vm.serializeAddress(deployedConfig, "lst", config.atmAuction.lst);
-    vm.serializeUint(deployedConfig, "proposalThreshold", config.governor.proposalThreshold);
-    vm.serializeUint(deployedConfig, "quorumPercentage", config.governor.quorumPercentage);
-    vm.serializeAddress(deployedConfig, "usdc", config.bondAuction.usdc);
-    vm.serializeUint(deployedConfig, "votingDelay", config.governor.votingDelay);
-    vm.serializeUint(deployedConfig, "votingPeriod", config.governor.votingPeriod);
-    vm.serializeUint(deployedConfig, "startTime", config.deposit.startTime);
-    string memory deployedConfigJson = vm.serializeUint(deployedConfig, "startBlock", block.number);
+        string memory deployments = "deployments";
 
-    console.log(config.deposit.signer);
+        vm.serializeAddress(deployments, "EthStrategy", address(ethStrategy));
+        string memory deploymentsJson = vm.serializeAddress(deployments, "Deposit", address(deposit));
 
-    vm.writeJson(deploymentsJson, "./out/deployments.json");
-    vm.writeJson(deployedConfigJson, "./out/deployed.config.json");
-  }
+        string memory deployedConfig = "config";
+        vm.serializeAddress(deployedConfig, "deployer", publicKey);
+        vm.serializeUint(deployedConfig, "DepositCap", config.deposit.cap);
+        vm.serializeUint(deployedConfig, "DepositConversionRate", config.deposit.conversionRate);
+        vm.serializeUint(deployedConfig, "DepositConversionPremium", config.deposit.conversionPremium);
+        vm.serializeAddress(deployedConfig, "DepositSigner", config.deposit.signer);
+        vm.serializeUint(deployedConfig, "startBlock", block.number);
+        vm.serializeAddress(deployedConfig, "lst", config.atmAuction.lst);
+        vm.serializeUint(deployedConfig, "proposalThreshold", config.governor.proposalThreshold);
+        vm.serializeUint(deployedConfig, "quorumPercentage", config.governor.quorumPercentage);
+        vm.serializeAddress(deployedConfig, "usdc", config.bondAuction.usdc);
+        vm.serializeUint(deployedConfig, "votingDelay", config.governor.votingDelay);
+        vm.serializeUint(deployedConfig, "votingPeriod", config.governor.votingPeriod);
+        vm.serializeUint(deployedConfig, "startTime", config.deposit.startTime);
+        string memory deployedConfigJson = vm.serializeUint(deployedConfig, "startBlock", block.number);
+
+        console.log(config.deposit.signer);
+
+        vm.writeJson(deploymentsJson, "./out/deployments.json");
+        vm.writeJson(deployedConfigJson, "./out/deployed.config.json");
+    }
 }
