@@ -9,6 +9,7 @@
     "deploy:prod": "dotenv -e .env -- bash -c 'forge script script/Deploy.s.sol --chain-id \"$CHAIN_ID\" --rpc-url \"$RPC_URL\" --private-key \"$PRIVATE_KEY\" --broadcast'",
     "deploy:deposit:test": "dotenv -e .env -- bash -c 'forge script script/DeployDeposit.s.sol --chain-id \"$CHAIN_ID\" --rpc-url \"$RPC_URL\" --private-key \"$PRIVATE_KEY\"'",
     "deploy:deposit:prod": "dotenv -e .env -- bash -c 'forge script script/DeployDeposit.s.sol --chain-id \"$CHAIN_ID\" --rpc-url \"$RPC_URL\" --private-key \"$PRIVATE_KEY\" --broadcast'",
+    "sign-whitelist": "dotenv -e .env -- bash -c 'forge script script/SignAddresses.s.sol --chain-id \"$CHAIN_ID\" --rpc-url \"$RPC_URL\" --private-key \"$PRIVATE_KEY\"'",
     "verify": "dotenv -e .env -- bash -c 'tsx ts-scripts/verify-contracts.ts -P ./'"
   },
   "keywords": [],
