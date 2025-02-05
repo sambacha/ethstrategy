@@ -94,7 +94,7 @@ contract DutchAuction is OwnableRoles, TReentrancyGuard {
         emit AuctionCancelled();
     }
 
-    function fill(uint128 _amountOut) public {
+    function fill(uint128 _amountOut) public nonreentrant {
         Auction memory _auction = auction;
         uint256 currentTime = block.timestamp;
         if (!_isAuctionActive(_auction, currentTime)) {
