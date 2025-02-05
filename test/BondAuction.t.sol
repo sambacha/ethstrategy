@@ -1,4 +1,5 @@
-pragma solidity ^0.8.20;
+// SPDX-License-Identifier: Apache 2.0
+pragma solidity ^0.8.26;
 
 import {DutchAuctionTest} from "./DutchAuction.t.sol";
 import {BondAuction} from "../src/BondAuction.sol";

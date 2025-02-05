@@ -1,4 +1,5 @@
-pragma solidity ^0.8.13;
+// SPDX-License-Identifier: Apache 2.0
+pragma solidity ^0.8.26;
 
 import {Ownable} from "solady/src/auth/Ownable.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
@@ -7,8 +8,11 @@ import {SignatureCheckerLib} from "solady/src/utils/SignatureCheckerLib.sol";
 import {TReentrancyGuard} from "../lib/TReentrancyGuard/src/TReentrancyGuard.sol";
 
 contract Deposit is Ownable, TReentrancyGuard {
+    /// @dev The conversion rate from ETH to EthStrategy (unit accounts)
     uint256 public immutable CONVERSION_RATE;
+    /// @dev The minimum amount of ETH that can be deposited
     uint256 constant MIN_DEPOSIT = 1e18;
+    /// @dev The maximum amount of ETH that can be deposited
     uint256 constant MAX_DEPOSIT = 100e18;
 
     error DepositAmountTooLow();
@@ -21,15 +25,17 @@ contract Deposit is Ownable, TReentrancyGuard {
     error InvalidCall();
     error DepositNotStarted();
 
+    /// @dev The address of the Ethstrategy token
     address public immutable ethStrategy;
+    /// @dev The address of the signer (if signer is set, whitelist is enabled)
     address public signer;
-
+    /// @dev A mapping to track if a user has redeemed whitelist spot
     mapping(address => bool) public hasRedeemed;
 
     uint256 public immutable conversionPremium;
     uint64 public immutable startTime;
     uint256 public constant DENOMINATOR_BP = 100_00;
-
+    /// @dev The maximum amount of ETH that can be deposited
     uint256 private depositCap_;
 
     /// @notice constructor
@@ -57,9 +63,9 @@ contract Deposit is Ownable, TReentrancyGuard {
         depositCap_ = _depositCap;
         startTime = _startTime;
     }
-
     /// @notice deposit eth and mint ethstrategy
     /// @param signature the signature of the signer for the depositor
+
     function deposit(bytes calldata signature) external payable nonreentrant {
         if (block.timestamp < startTime) revert DepositNotStarted();
         uint256 value = msg.value;
@@ -87,19 +93,20 @@ contract Deposit is Ownable, TReentrancyGuard {
 
         IEthStrategy(ethStrategy).mint(msg.sender, amount);
     }
-
     /// @notice get the current deposit cap
     /// @return the current deposit cap
+
     function depositCap() external view returns (uint256) {
         return depositCap_;
     }
-
     /// @notice set the signer
     /// @param _signer the new signer
     /// @dev only the owner can set the signer
+
     function setSigner(address _signer) external onlyOwner {
         signer = _signer;
     }
+    /// @dev A fallback function to reject any ETH sent to the contract that is not using a payable method
 
     receive() external payable {
         revert InvalidCall();
