@@ -1,11 +1,5 @@
-// read in json file
-// read in private key
-// start broadcast
-// deploy contracts
-// configure owner
-// write args to file
-//
-pragma solidity ^0.8.0;
+// SPDX-License-Identifier: Apache 2.0
+pragma solidity ^0.8.26;
 
 import {console2} from "forge-std/console2.sol";
 import {Script} from "forge-std/Script.sol";

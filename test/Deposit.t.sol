@@ -1,4 +1,5 @@
-pragma solidity ^0.8.20;
+// SPDX-License-Identifier: Apache 2.0
+pragma solidity ^0.8.26;
 
 import {Test} from "forge-std/Test.sol";
 import {BaseTest} from "./utils/BaseTest.t.sol";
@@ -6,7 +7,6 @@ import {EthStrategyGovernor} from "../../src/EthStrategyGovernor.sol";
 import {IGovernor} from "@openzeppelin/contracts/governance/IGovernor.sol";
 import {IVotes} from "@openzeppelin/contracts/governance/utils/IVotes.sol";
 import {DutchAuction} from "../../src/DutchAuction.sol";
-import {console} from "forge-std/console.sol";
 import {Deposit} from "../../src/Deposit.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {Ownable} from "solady/src/auth/Ownable.sol";
