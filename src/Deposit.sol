@@ -76,8 +76,7 @@ contract Deposit is Ownable, TReentrancyGuard {
         if (signer != address(0)) {
             if (hasRedeemed[msg.sender]) revert AlreadyRedeemed();
             hasRedeemed[msg.sender] = true;
-
-            bytes32 hash = keccak256(abi.encodePacked(msg.sender));
+            bytes32 hash = SignatureCheckerLib.toEthSignedMessageHash(abi.encodePacked(msg.sender));
             if (!SignatureCheckerLib.isValidSignatureNow(signer, hash, signature)) revert InvalidSignature();
         }
 

@@ -11,6 +11,7 @@ import {Deposit} from "../../src/Deposit.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {Ownable} from "solady/src/auth/Ownable.sol";
 import {TReentrancyGuard} from "../../lib/TReentrancyGuard/src/TReentrancyGuard.sol";
+import {SignatureCheckerLib} from "solady/src/utils/SignatureCheckerLib.sol";
 
 contract DepositTest is BaseTest {
     DutchAuction dutchAuction;
@@ -266,9 +267,32 @@ contract DepositTest is BaseTest {
     }
 
     function getSignature(address _to) public view returns (bytes memory) {
-        bytes32 hash = keccak256(abi.encodePacked(_to));
+        bytes32 hash = SignatureCheckerLib.toEthSignedMessageHash(abi.encodePacked(_to));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(signer.key, hash);
         return abi.encodePacked(r, s, v);
+    }
+
+    function test_whitelist_example_signature() public {
+        vm.startPrank(address(governor));
+        address _signer = 0x4ADaB48B2FfCC7aDdCEF346fE56Af3812813001c;
+        deposit.setSigner(_signer);
+        vm.stopPrank();
+        address depositor = 0x2Fc9478c3858733b6e9b87458D71044A2071a300;
+        uint256 depositAmount = 1e18;
+        bytes memory signature =
+            hex"85f7247810d04fd78e94915ca7a46e108f55cb0c3c2b9715cfbef293a62c3f9109fcca42b389a4c9ce7348059cd5103a252ab8125c2a648bd6f0ce12718ed1a71c";
+        vm.deal(depositor, depositAmount);
+        vm.startPrank(depositor);
+        vm.expectEmit();
+        emit ERC20.Transfer(address(0), depositor, depositAmount * deposit.CONVERSION_RATE());
+        deposit.deposit{value: depositAmount}(signature);
+        vm.stopPrank();
+
+        uint256 conversionRate = deposit.CONVERSION_RATE();
+        assertEq(ethStrategy.balanceOf(depositor), conversionRate * depositAmount, "balance of alice incorrect");
+        assertEq(deposit.depositCap(), defaultDepositCap - depositAmount, "deposit cap incorrect");
+        assertEq(deposit.hasRedeemed(depositor), true, "alice hasn't redeemed");
+        assertEq(address(governor).balance, depositAmount, "governor balance incorrect");
     }
 
     function testFuzz_deposit(
