@@ -3,7 +3,6 @@ pragma solidity ^0.8.26;
 
 import {Test} from "forge-std/Test.sol";
 import {BaseTest} from "./utils/BaseTest.t.sol";
-import {EthStrategyGovernor} from "../../src/EthStrategyGovernor.sol";
 import {IGovernor} from "@openzeppelin/contracts/governance/IGovernor.sol";
 import {IVotes} from "@openzeppelin/contracts/governance/utils/IVotes.sol";
 import {DutchAuction} from "../../src/DutchAuction.sol";
@@ -12,6 +11,7 @@ import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {Ownable} from "solady/src/auth/Ownable.sol";
 import {TReentrancyGuard} from "../../lib/TReentrancyGuard/src/TReentrancyGuard.sol";
 import {SignatureCheckerLib} from "solady/src/utils/SignatureCheckerLib.sol";
+import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 
 contract DepositTest is BaseTest {
     DutchAuction dutchAuction;
@@ -30,11 +30,10 @@ contract DepositTest is BaseTest {
 
     function setUp() public virtual override {
         super.setUp();
-        dutchAuction = new DutchAuction(address(ethStrategy), address(governor), address(usdcToken));
+        dutchAuction = new DutchAuction(address(ethStrategy), address(usdcToken));
         signer = makeAccount("signer");
         vm.label(signer.addr, "signer");
         deposit = new Deposit(
-            address(governor),
             address(ethStrategy),
             signer.addr,
             defaultConversionRate,
@@ -42,9 +41,11 @@ contract DepositTest is BaseTest {
             defaultDepositCap,
             uint64(block.timestamp)
         );
-        vm.startPrank(address(governor));
-        ethStrategy.grantRoles(address(dutchAuction), ethStrategy.MINTER_ROLE());
-        ethStrategy.grantRoles(address(deposit), ethStrategy.MINTER_ROLE());
+        vm.startPrank(address(initialOwner.addr));
+        ethStrategy.grantRole(ethStrategy.MINTER_ROLE(), address(dutchAuction));
+        ethStrategy.grantRole(ethStrategy.MINTER_ROLE(), address(deposit));
+        vm.stopPrank();
+        vm.startPrank(address(ethStrategy));
         dutchAuction.grantRoles(admin1.addr, dutchAuction.ADMIN_ROLE());
         dutchAuction.grantRoles(admin2.addr, dutchAuction.ADMIN_ROLE());
         vm.stopPrank();
@@ -64,12 +65,11 @@ contract DepositTest is BaseTest {
         assertEq(ethStrategy.balanceOf(alice), conversionRate * depositAmount, "balance of alice incorrect");
         assertEq(deposit.depositCap(), defaultDepositCap - depositAmount, "deposit cap incorrect");
         assertEq(deposit.hasRedeemed(alice), true, "alice hasn't redeemed");
-        assertEq(address(governor).balance, depositAmount, "governor balance incorrect");
+        assertEq(address(ethStrategy).balance, depositAmount, "ethStrategy balance incorrect");
     }
 
     function test_deposit_success_whiteListDisabled() public {
         deposit = new Deposit(
-            address(governor),
             address(ethStrategy),
             address(0),
             defaultConversionRate,
@@ -77,8 +77,8 @@ contract DepositTest is BaseTest {
             defaultDepositCap,
             uint64(block.timestamp)
         );
-        vm.startPrank(address(governor));
-        ethStrategy.grantRoles(address(deposit), ethStrategy.MINTER_ROLE());
+        vm.startPrank(address(ethStrategy));
+        ethStrategy.grantRole(ethStrategy.MINTER_ROLE(), address(deposit));
         vm.stopPrank();
         uint256 depositAmount = 1e18;
         vm.deal(alice, depositAmount);
@@ -91,12 +91,11 @@ contract DepositTest is BaseTest {
         uint256 conversionRate = deposit.CONVERSION_RATE();
         assertEq(ethStrategy.balanceOf(alice), conversionRate * depositAmount, "balance of alice incorrect");
         assertEq(deposit.depositCap(), defaultDepositCap - depositAmount, "deposit cap incorrect");
-        assertEq(address(governor).balance, depositAmount, "governor balance incorrect");
+        assertEq(address(ethStrategy).balance, depositAmount, "ethStrategy balance incorrect");
     }
 
     function test_deposit_DepositNotStarted() public {
         deposit = new Deposit(
-            address(governor),
             address(ethStrategy),
             address(0),
             defaultConversionRate,
@@ -104,8 +103,8 @@ contract DepositTest is BaseTest {
             defaultDepositCap,
             uint64(block.timestamp + 1)
         );
-        vm.startPrank(address(governor));
-        ethStrategy.grantRoles(address(deposit), ethStrategy.MINTER_ROLE());
+        vm.startPrank(address(ethStrategy));
+        ethStrategy.grantRole(ethStrategy.MINTER_ROLE(), address(deposit));
         vm.stopPrank();
         uint256 depositAmount = 1e18;
         bytes memory signature = getSignature(alice);
@@ -127,7 +126,7 @@ contract DepositTest is BaseTest {
 
         assertEq(deposit.depositCap(), defaultDepositCap, "deposit cap incorrect");
         assertEq(deposit.hasRedeemed(alice), false, "alice has redeemed");
-        assertEq(address(governor).balance, 0, "governor balance incorrect");
+        assertEq(address(ethStrategy).balance, 0, "ethStrategy balance incorrect");
         assertEq(ethStrategy.balanceOf(alice), 0, "alice balance incorrect");
         assertEq(address(deposit).balance, 0, "deposit balance incorrect");
     }
@@ -147,7 +146,7 @@ contract DepositTest is BaseTest {
 
         assertEq(deposit.depositCap(), defaultDepositCap - depositAmount, "deposit cap incorrect");
         assertEq(deposit.hasRedeemed(alice), true, "alice has redeemed");
-        assertEq(address(governor).balance, depositAmount, "governor balance incorrect");
+        assertEq(address(ethStrategy).balance, depositAmount, "ethStrategy balance incorrect");
         assertEq(ethStrategy.balanceOf(alice), depositAmount * deposit.CONVERSION_RATE(), "alice balance incorrect");
         assertEq(address(deposit).balance, 0, "deposit balance incorrect");
     }
@@ -163,7 +162,7 @@ contract DepositTest is BaseTest {
 
         assertEq(deposit.depositCap(), defaultDepositCap, "deposit cap incorrect");
         assertEq(deposit.hasRedeemed(alice), false, "alice has redeemed");
-        assertEq(address(governor).balance, 0, "governor balance incorrect");
+        assertEq(address(ethStrategy).balance, 0, "ethStrategy balance incorrect");
         assertEq(ethStrategy.balanceOf(alice), 0, "alice balance incorrect");
         assertEq(address(deposit).balance, 0, "deposit balance incorrect");
     }
@@ -178,7 +177,7 @@ contract DepositTest is BaseTest {
 
         assertEq(deposit.depositCap(), defaultDepositCap, "deposit cap incorrect");
         assertEq(deposit.hasRedeemed(alice), false, "alice has redeemed");
-        assertEq(address(governor).balance, 0, "governor balance incorrect");
+        assertEq(address(ethStrategy).balance, 0, "ethStrategy balance incorrect");
         assertEq(ethStrategy.balanceOf(alice), 0, "alice balance incorrect");
         assertEq(address(deposit).balance, 0, "deposit balance incorrect");
     }
@@ -194,7 +193,7 @@ contract DepositTest is BaseTest {
 
         assertEq(deposit.depositCap(), defaultDepositCap, "deposit cap incorrect");
         assertEq(deposit.hasRedeemed(alice), false, "alice has redeemed");
-        assertEq(address(governor).balance, 0, "governor balance incorrect");
+        assertEq(address(ethStrategy).balance, 0, "ethStrategy balance incorrect");
         assertEq(ethStrategy.balanceOf(alice), 0, "alice balance incorrect");
         assertEq(address(deposit).balance, 0, "deposit balance incorrect");
     }
@@ -203,7 +202,7 @@ contract DepositTest is BaseTest {
         uint256 depositAmount = 1e18;
         bytes memory signature = getSignature(alice);
         OwnerDepositRejector ownerDepositRejector = new OwnerDepositRejector();
-        vm.startPrank(address(governor));
+        vm.startPrank(address(ethStrategy));
         deposit.transferOwnership(address(ownerDepositRejector));
         vm.stopPrank();
         vm.deal(alice, depositAmount);
@@ -214,14 +213,14 @@ contract DepositTest is BaseTest {
 
         assertEq(deposit.depositCap(), defaultDepositCap, "deposit cap incorrect");
         assertEq(deposit.hasRedeemed(alice), false, "alice has redeemed");
-        assertEq(address(governor).balance, 0, "governor balance incorrect");
+        assertEq(address(ethStrategy).balance, 0, "ethStrategy balance incorrect");
         assertEq(ethStrategy.balanceOf(alice), 0, "alice balance incorrect");
         assertEq(address(deposit).balance, 0, "deposit balance incorrect");
     }
 
     function test_deposit_ReentrancyForbidden() public {
         ReentrantDeposit reentrantDeposit = new ReentrantDeposit(deposit);
-        vm.prank(address(governor));
+        vm.prank(address(ethStrategy));
         deposit.transferOwnership(address(reentrantDeposit));
         uint256 depositAmount = 1e18;
         bytes memory signature = getSignature(alice);
@@ -236,7 +235,6 @@ contract DepositTest is BaseTest {
         uint256 conversionPremium = 100_01;
         vm.expectRevert(Deposit.InvalidConversionPremium.selector);
         deposit = new Deposit(
-            address(governor),
             address(ethStrategy),
             signer.addr,
             defaultConversionRate,
@@ -247,7 +245,7 @@ contract DepositTest is BaseTest {
     }
 
     function test_setSigner_success() public {
-        vm.startPrank(address(governor));
+        vm.startPrank(address(ethStrategy));
         deposit.setSigner(bob);
         vm.stopPrank();
         assertEq(deposit.signer(), bob, "signer incorrect");
@@ -273,7 +271,7 @@ contract DepositTest is BaseTest {
     }
 
     function test_whitelist_example_signature() public {
-        vm.startPrank(address(governor));
+        vm.startPrank(address(ethStrategy));
         address _signer = 0x4ADaB48B2FfCC7aDdCEF346fE56Af3812813001c;
         deposit.setSigner(_signer);
         vm.stopPrank();
@@ -292,7 +290,7 @@ contract DepositTest is BaseTest {
         assertEq(ethStrategy.balanceOf(depositor), conversionRate * depositAmount, "balance of alice incorrect");
         assertEq(deposit.depositCap(), defaultDepositCap - depositAmount, "deposit cap incorrect");
         assertEq(deposit.hasRedeemed(depositor), true, "alice hasn't redeemed");
-        assertEq(address(governor).balance, depositAmount, "governor balance incorrect");
+        assertEq(address(ethStrategy).balance, depositAmount, "ethStrategy balance incorrect");
     }
 
     function testFuzz_deposit(
@@ -309,7 +307,6 @@ contract DepositTest is BaseTest {
 
         uint256 DENOMINATOR_BP = deposit.DENOMINATOR_BP();
         deposit = new Deposit(
-            address(governor),
             address(ethStrategy),
             signer.addr,
             conversionRate,
@@ -318,8 +315,8 @@ contract DepositTest is BaseTest {
             uint64(block.timestamp)
         );
 
-        vm.startPrank(address(governor));
-        ethStrategy.grantRoles(address(deposit), ethStrategy.MINTER_ROLE());
+        vm.startPrank(address(ethStrategy));
+        ethStrategy.grantRole(ethStrategy.MINTER_ROLE(), address(deposit));
         vm.stopPrank();
 
         bytes memory signature = getSignature(alice);
@@ -336,7 +333,7 @@ contract DepositTest is BaseTest {
 
         assertEq(deposit.depositCap(), depositCap - depositAmount, "deposit cap incorrect");
         assertEq(deposit.hasRedeemed(alice), true, "alice has redeemed");
-        assertEq(address(governor).balance, depositAmount, "governor balance incorrect");
+        assertEq(address(ethStrategy).balance, depositAmount, "governor balance incorrect");
         assertEq(
             ethStrategy.balanceOf(alice),
             (depositAmount * deposit.CONVERSION_RATE() * (DENOMINATOR_BP - conversionPremium)) / DENOMINATOR_BP,

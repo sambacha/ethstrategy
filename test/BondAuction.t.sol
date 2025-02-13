@@ -8,19 +8,21 @@ import {DutchAuction} from "../src/DutchAuction.sol";
 contract BondAuctionTest is DutchAuctionTest {
     function setUp() public override {
         super.setUp();
-        dutchAuction = new BondAuction(address(ethStrategy), address(governor), address(usdcToken));
-        vm.startPrank(address(governor));
-        ethStrategy.grantRoles(address(dutchAuction), ethStrategy.MINTER_ROLE());
+        dutchAuction = new BondAuction(address(ethStrategy), address(usdcToken));
+        vm.startPrank(address(initialOwner.addr));
+        ethStrategy.grantRole(ethStrategy.MINTER_ROLE(), address(dutchAuction));
+        vm.stopPrank();
+        vm.startPrank(address(ethStrategy));
         dutchAuction.grantRoles(admin1.addr, dutchAuction.ADMIN_ROLE());
         dutchAuction.grantRoles(admin2.addr, dutchAuction.ADMIN_ROLE());
         vm.stopPrank();
     }
 
     function test_constructor_success() public {
-        dutchAuction = new BondAuction(address(ethStrategy), address(governor), address(usdcToken));
+        dutchAuction = new BondAuction(address(ethStrategy), address(usdcToken));
         assertEq(dutchAuction.ethStrategy(), address(ethStrategy), "ethStrategy not assigned correctly");
         assertEq(dutchAuction.paymentToken(), address(usdcToken), "paymentToken not assigned correctly");
-        assertEq(dutchAuction.owner(), address(governor), "governor not assigned correctly");
+        assertEq(dutchAuction.owner(), address(ethStrategy), "ethStrategy not assigned correctly");
     }
 
     function test_fill_success_1() public override {
@@ -82,7 +84,7 @@ contract BondAuctionTest is DutchAuctionTest {
         assertEq(ethStrategy.balanceOf(alice), defaultAmount, "ethStrategy balance not assigned correctly");
         assertEq(usdcToken.balanceOf(address(dutchAuction)), 0, "usdcToken balance not assigned correctly");
         assertEq(
-            usdcToken.balanceOf(address(governor)),
+            usdcToken.balanceOf(address(ethStrategy)),
             defaultAmount * defaultStartPrice / (10 ** ethStrategy.decimals()),
             "usdcToken balance not assigned correctly"
         );

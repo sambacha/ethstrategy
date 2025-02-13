@@ -16,9 +16,10 @@ contract DutchAuctionTest is BaseTest {
 
     function setUp() public virtual override {
         super.setUp();
-        dutchAuction = new DutchAuction(address(ethStrategy), address(governor), address(usdcToken));
-        vm.startPrank(address(governor));
-        ethStrategy.grantRoles(address(dutchAuction), ethStrategy.MINTER_ROLE());
+        dutchAuction = new DutchAuction(address(ethStrategy), address(usdcToken));
+        vm.startPrank(address(initialOwner.addr));
+        ethStrategy.grantRole(ethStrategy.MINTER_ROLE(), address(dutchAuction));
+        vm.startPrank(address(ethStrategy));
         dutchAuction.grantRoles(admin1.addr, dutchAuction.ADMIN_ROLE());
         dutchAuction.grantRoles(admin2.addr, dutchAuction.ADMIN_ROLE());
         vm.stopPrank();

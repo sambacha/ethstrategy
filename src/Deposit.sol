@@ -39,14 +39,12 @@ contract Deposit is Ownable, TReentrancyGuard {
     uint256 private depositCap_;
 
     /// @notice constructor
-    /// @param _owner the owner of the deposit contract
     /// @param _ethStrategy the address of the ethstrategy token
     /// @param _signer the address of the signer (if signer is set, whitelist is enabled)
     /// @param _conversionRate the conversion rate from eth to ethstrategy
     /// @param _conversionPremium the conversion premium in basis points (0 - 100_00)
     /// @param _depositCap the maximum global deposit cap
     constructor(
-        address _owner,
         address _ethStrategy,
         address _signer,
         uint256 _conversionRate,
@@ -56,7 +54,7 @@ contract Deposit is Ownable, TReentrancyGuard {
     ) {
         if (_conversionPremium > DENOMINATOR_BP) revert InvalidConversionPremium();
         CONVERSION_RATE = _conversionRate;
-        _initializeOwner(_owner);
+        _initializeOwner(_ethStrategy);
         ethStrategy = _ethStrategy;
         signer = _signer;
         conversionPremium = _conversionPremium;

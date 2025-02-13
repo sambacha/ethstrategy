@@ -26,10 +26,9 @@ contract BondAuction is DutchAuction {
 
     /// @dev The constructor for the BondAuction contract, initializes the DutchAuction contract
     /// @param _ethStrategy The address of the EthStrategy contract
-    /// @param _governor The address of the governor
     /// @param _paymentToken The address of the payment token
-    constructor(address _ethStrategy, address _governor, address _paymentToken)
-        DutchAuction(_ethStrategy, _governor, _paymentToken)
+    constructor(address _ethStrategy, address _paymentToken)
+        DutchAuction(_ethStrategy, _paymentToken)
     {}
     /// @dev An internal override of the _fill function from DutchAuction, transfers the paymentToken to the contract and creates a bond for the filler
     /// @param amountOut The amount of tokens to be sold (in the future during the strike window)

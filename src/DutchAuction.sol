@@ -52,12 +52,11 @@ contract DutchAuction is OwnableRoles, TReentrancyGuard {
 
     /// @notice Constructor for the DutchAuction contract
     /// @param _ethStrategy The address of the EthStrategy contract (tokens to be sold)
-    /// @param _governor The address of the governor (owner of the contract)
     /// @param _paymentToken The address of the payment token (tokens used as payment)
-    constructor(address _ethStrategy, address _governor, address _paymentToken) {
+    constructor(address _ethStrategy, address _paymentToken) {
         ethStrategy = _ethStrategy;
         paymentToken = _paymentToken;
-        _initializeOwner(_governor);
+        _initializeOwner(_ethStrategy);
         decimals = IEthStrategy(_ethStrategy).decimals();
     }
     /// @notice Start a new auction, auctions occur one at a time and can be triggered by the ADMIN_ROLE or the OWNER
