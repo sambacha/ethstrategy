@@ -4,11 +4,7 @@ pragma solidity ^0.8.26;
 import {OwnableRoles} from "solady/src/auth/OwnableRoles.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {TReentrancyGuard} from "../lib/TReentrancyGuard/src/TReentrancyGuard.sol";
-
-interface IEthStrategy {
-    function decimals() external view returns (uint8);
-    function mint(address _to, uint256 _amount) external;
-}
+import {IEthStrategy} from "./EthStrategy.sol";
 
 contract DutchAuction is OwnableRoles, TReentrancyGuard {
     error InvalidStartTime();

@@ -3,7 +3,7 @@ pragma solidity ^0.8.26;
 
 import {Ownable} from "solady/src/auth/Ownable.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
-import {IEthStrategy} from "./DutchAuction.sol";
+import {IEthStrategy} from "./EthStrategy.sol";
 import {SignatureCheckerLib} from "solady/src/utils/SignatureCheckerLib.sol";
 import {TReentrancyGuard} from "../lib/TReentrancyGuard/src/TReentrancyGuard.sol";
 

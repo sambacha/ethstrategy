@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache 2.0
 pragma solidity ^0.8.26;
 
-import {Test} from "forge-std/Test.sol";
 import {BaseTest} from "./utils/BaseTest.t.sol";
 import {IGovernor} from "@openzeppelin/contracts/governance/IGovernor.sol";
 import {IVotes} from "@openzeppelin/contracts/governance/utils/IVotes.sol";
@@ -307,12 +306,7 @@ contract DepositTest is BaseTest {
 
         uint256 DENOMINATOR_BP = deposit.DENOMINATOR_BP();
         deposit = new Deposit(
-            address(ethStrategy),
-            signer.addr,
-            conversionRate,
-            conversionPremium,
-            depositCap,
-            uint64(block.timestamp)
+            address(ethStrategy), signer.addr, conversionRate, conversionPremium, depositCap, uint64(block.timestamp)
         );
 
         vm.startPrank(address(ethStrategy));

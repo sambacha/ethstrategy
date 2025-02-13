@@ -5,7 +5,6 @@ import {Test} from "forge-std/Test.sol";
 import {AtmAuction} from "../../src/AtmAuction.sol";
 import {EthStrategy} from "../../src/EthStrategy.sol";
 import {USDCToken} from "./USDCToken.sol";
-import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 
 interface IERC20 {
     function mint(address to, uint256 amount) external;

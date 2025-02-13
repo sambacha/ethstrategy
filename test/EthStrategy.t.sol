@@ -1,18 +1,16 @@
 // SPDX-License-Identifier: Apache 2.0
 pragma solidity ^0.8.26;
 
-import {Test} from "forge-std/Test.sol";
 import {BaseTest} from "./utils/BaseTest.t.sol";
 import {IGovernor} from "@openzeppelin/contracts/governance/IGovernor.sol";
 import {IVotes} from "@openzeppelin/contracts/governance/utils/IVotes.sol";
 import {DutchAuction} from "../../src/DutchAuction.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
-import {Test} from "forge-std/Test.sol";
 import {EthStrategy} from "../../src/EthStrategy.sol";
 import {Ownable} from "solady/src/auth/OwnableRoles.sol";
-import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {IAccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
+
 contract EthStrategyGovernorTest is BaseTest {
     DutchAuction dutchAuction;
 
@@ -70,7 +68,9 @@ contract EthStrategyGovernorTest is BaseTest {
         );
         ethStrategy.propose(targets, values, calldatas, description);
         vm.stopPrank();
-        assertEq(uint256(ethStrategy.state(proposalId)), uint256(IGovernor.ProposalState.Pending), "proposal not pending");
+        assertEq(
+            uint256(ethStrategy.state(proposalId)), uint256(IGovernor.ProposalState.Pending), "proposal not pending"
+        );
         assertEq(ethStrategy.proposalNeedsQueuing(proposalId), true, "proposal needs queuing");
         assertEq(ethStrategy.hasVoted(proposalId, address(alice)), false, "alice has not voted");
         assertEq(ethStrategy.hasVoted(proposalId, address(bob)), false, "bob has not voted");
@@ -90,7 +90,9 @@ contract EthStrategyGovernorTest is BaseTest {
         assertEq(ethStrategy.hasVoted(proposalId, address(charlie)), true, "charlie has voted");
         assertEq(uint8(ethStrategy.state(proposalId)), uint8(IGovernor.ProposalState.Active), "proposal not active");
         vm.warp(block.timestamp + ethStrategy.votingPeriod() + 1);
-        assertEq(uint8(ethStrategy.state(proposalId)), uint8(IGovernor.ProposalState.Succeeded), "proposal not succeeded");
+        assertEq(
+            uint8(ethStrategy.state(proposalId)), uint8(IGovernor.ProposalState.Succeeded), "proposal not succeeded"
+        );
 
         ethStrategy.queue(targets, values, calldatas, keccak256(bytes(description)));
         vm.warp(block.timestamp + ethStrategy.getMinDelay());
@@ -149,7 +151,9 @@ contract EthStrategyGovernorTest is BaseTest {
         );
         ethStrategy.propose(targets, values, calldatas, description);
         vm.stopPrank();
-        assertEq(uint256(ethStrategy.state(proposalId)), uint256(IGovernor.ProposalState.Pending), "proposal not pending");
+        assertEq(
+            uint256(ethStrategy.state(proposalId)), uint256(IGovernor.ProposalState.Pending), "proposal not pending"
+        );
         assertEq(ethStrategy.proposalNeedsQueuing(proposalId), true, "proposal needs queuing");
         assertEq(ethStrategy.hasVoted(proposalId, address(alice)), false, "alice has not voted");
         assertEq(ethStrategy.hasVoted(proposalId, address(bob)), false, "bob has not voted");
@@ -201,13 +205,15 @@ contract EthStrategyGovernorTest is BaseTest {
             values,
             new string[](targets.length),
             calldatas,
-            block.timestamp+ ethStrategy.votingDelay(),
+            block.timestamp + ethStrategy.votingDelay(),
             block.timestamp + ethStrategy.votingPeriod() + ethStrategy.votingDelay(),
             description
         );
         ethStrategy.propose(targets, values, calldatas, description);
         vm.stopPrank();
-        assertEq(uint256(ethStrategy.state(proposalId)), uint256(IGovernor.ProposalState.Pending), "proposal not pending");
+        assertEq(
+            uint256(ethStrategy.state(proposalId)), uint256(IGovernor.ProposalState.Pending), "proposal not pending"
+        );
         assertEq(ethStrategy.proposalNeedsQueuing(proposalId), true, "proposal needs queuing");
         assertEq(ethStrategy.hasVoted(proposalId, address(alice)), false, "alice has not voted");
         assertEq(ethStrategy.hasVoted(proposalId, address(bob)), false, "bob has not voted");
@@ -233,20 +239,21 @@ contract EthStrategyGovernorTest is BaseTest {
     // }
 
     function test_mint_success() public {
-        
         vm.startPrank(address(ethStrategy));
         ethStrategy.mint(address(alice), 100e18);
         assertEq(ethStrategy.balanceOf(address(alice)), 100e18, "balance not assigned correctly");
     }
 
     function test_mint_revert_unauthorized() public {
-        
-        vm.expectRevert(abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, address(this), ethStrategy.MINTER_ROLE()));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, address(this), ethStrategy.MINTER_ROLE()
+            )
+        );
         ethStrategy.mint(address(alice), 100e18);
     }
 
     function test_mint_success_with_role() public {
-        
         address admin = address(1);
         bytes32 role = ethStrategy.MINTER_ROLE();
         vm.prank(address(ethStrategy));
@@ -257,29 +264,29 @@ contract EthStrategyGovernorTest is BaseTest {
     }
 
     function test_name_success() public {
-        
         assertEq(ethStrategy.name(), "EthStrategy", "name not assigned correctly");
     }
 
     function test_symbol_success() public {
-        
         assertEq(ethStrategy.symbol(), "ETHXR", "symbol not assigned correctly");
     }
 
     function test_setIsTransferPaused_success() public {
-        
         vm.prank(address(ethStrategy));
         ethStrategy.setIsTransferPaused(true);
         assertEq(ethStrategy.isTransferPaused(), true, "isTransferPaused not assigned correctly");
     }
 
     function test_setIsTransferPaused_revert_unauthorized() public {
-        vm.expectRevert(abi.encodeWithSelector(IAccessControl.AccessControlUnauthorizedAccount.selector, address(this), ethStrategy.PAUSER_ROLE()));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector, address(this), ethStrategy.PAUSER_ROLE()
+            )
+        );
         ethStrategy.setIsTransferPaused(true);
     }
 
     function test_transfer_revert_transferPaused() public {
-        
         vm.prank(address(ethStrategy));
         ethStrategy.mint(address(alice), 1);
         vm.prank(address(alice));
@@ -288,7 +295,6 @@ contract EthStrategyGovernorTest is BaseTest {
     }
 
     function test_transfer_success() public {
-        
         vm.prank(address(ethStrategy));
         ethStrategy.mint(address(alice), 1);
         vm.startPrank(address(ethStrategy));
