@@ -92,6 +92,8 @@ contract EthStrategyGovernorTest is BaseTest {
         vm.warp(block.timestamp + ethStrategy.votingPeriod() + 1);
         assertEq(uint8(ethStrategy.state(proposalId)), uint8(IGovernor.ProposalState.Succeeded), "proposal not succeeded");
 
+        ethStrategy.queue(targets, values, calldatas, keccak256(bytes(description)));
+        vm.warp(block.timestamp + ethStrategy.getMinDelay());
         DutchAuction.Auction memory auction = DutchAuction.Auction({
             startTime: uint64(block.timestamp),
             duration: defaultDuration,
@@ -99,9 +101,9 @@ contract EthStrategyGovernorTest is BaseTest {
             endPrice: defaultEndPrice,
             amount: defaultAmount
         });
-        ethStrategy.queue(targets, values, calldatas, keccak256(bytes(description)));
-        vm.warp(block.timestamp + ethStrategy.getMinDelay());
-        // bytes32 id = ethStategy.hashOperationBatch(targets, values, calldatas, predecessor, salt);
+        bytes32 descriptionHash = keccak256(bytes(description));
+        bytes32 salt = bytes20(address(ethStrategy)) ^ descriptionHash;
+        bytes32 id = ethStrategy.hashOperationBatch(targets, values, calldatas, 0, salt);
         vm.expectEmit();
         emit DutchAuction.AuctionStarted(auction);
         vm.expectEmit();
