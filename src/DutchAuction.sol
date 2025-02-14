@@ -4,11 +4,7 @@ pragma solidity ^0.8.26;
 import {OwnableRoles} from "solady/src/auth/OwnableRoles.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {TReentrancyGuard} from "../lib/TReentrancyGuard/src/TReentrancyGuard.sol";
-
-interface IEthStrategy {
-    function decimals() external view returns (uint8);
-    function mint(address _to, uint256 _amount) external;
-}
+import {IEthStrategy} from "./EthStrategy.sol";
 
 contract DutchAuction is OwnableRoles, TReentrancyGuard {
     error InvalidStartTime();
@@ -52,12 +48,11 @@ contract DutchAuction is OwnableRoles, TReentrancyGuard {
 
     /// @notice Constructor for the DutchAuction contract
     /// @param _ethStrategy The address of the EthStrategy contract (tokens to be sold)
-    /// @param _governor The address of the governor (owner of the contract)
     /// @param _paymentToken The address of the payment token (tokens used as payment)
-    constructor(address _ethStrategy, address _governor, address _paymentToken) {
+    constructor(address _ethStrategy, address _paymentToken) {
         ethStrategy = _ethStrategy;
         paymentToken = _paymentToken;
-        _initializeOwner(_governor);
+        _initializeOwner(_ethStrategy);
         decimals = IEthStrategy(_ethStrategy).decimals();
     }
     /// @notice Start a new auction, auctions occur one at a time and can be triggered by the ADMIN_ROLE or the OWNER

@@ -6,7 +6,6 @@ import {Script} from "forge-std/Script.sol";
 import {AtmAuction} from "../src/AtmAuction.sol";
 import {BondAuction} from "../src/BondAuction.sol";
 import {EthStrategy} from "../src/EthStrategy.sol";
-import {EthStrategyGovernor} from "../src/EthStrategyGovernor.sol";
 import {IVotes} from "@openzeppelin/contracts/governance/utils/IVotes.sol";
 import {Deposit} from "../src/Deposit.sol";
 import {console} from "forge-std/console.sol";
@@ -30,7 +29,9 @@ contract Deploy is Script {
     struct GovernorConfig {
         uint256 proposalThreshold;
         uint256 quorumPercentage;
+        uint256 timelockDelay;
         uint256 votingDelay;
+        uint256 voteExtension;
         uint256 votingPeriod;
     }
 
@@ -61,23 +62,20 @@ contract Deploy is Script {
         console2.log("depositSigner: ", config.deposit.signer);
 
         vm.startBroadcast(vm.envUint("PRIVATE_KEY"));
-        address publicKey = vm.addr(vm.envUint("PRIVATE_KEY"));
-        console2.log("publicKey: ", publicKey);
+        address deployer = vm.addr(vm.envUint("PRIVATE_KEY"));
+        console2.log("deployer: ", deployer);
 
-        EthStrategy ethStrategy = new EthStrategy(publicKey);
-        EthStrategyGovernor ethStrategyGovernor = new EthStrategyGovernor(
-            IVotes(address(ethStrategy)),
+        EthStrategy ethStrategy = new EthStrategy(
             config.governor.quorumPercentage,
-            config.governor.votingDelay,
-            config.governor.votingPeriod,
-            config.governor.proposalThreshold
+            uint48(config.governor.votingDelay),
+            uint32(config.governor.votingPeriod),
+            config.governor.proposalThreshold,
+            uint48(config.governor.voteExtension),
+            config.governor.timelockDelay
         );
-        AtmAuction atmAuction =
-            new AtmAuction(address(ethStrategy), address(ethStrategyGovernor), config.atmAuction.lst);
-        BondAuction bondAuction =
-            new BondAuction(address(ethStrategy), address(ethStrategyGovernor), config.bondAuction.usdc);
+        AtmAuction atmAuction = new AtmAuction(address(ethStrategy), config.atmAuction.lst);
+        BondAuction bondAuction = new BondAuction(address(ethStrategy), config.bondAuction.usdc);
         Deposit deposit = new Deposit(
-            address(ethStrategyGovernor),
             address(ethStrategy),
             config.deposit.signer,
             config.deposit.conversionRate,
@@ -86,25 +84,22 @@ contract Deploy is Script {
             config.deposit.startTime
         );
 
-        ethStrategy.grantRoles(address(atmAuction), ethStrategy.MINTER_ROLE());
-        ethStrategy.grantRoles(address(bondAuction), ethStrategy.MINTER_ROLE());
-        ethStrategy.grantRoles(address(deposit), ethStrategy.MINTER_ROLE());
-        ethStrategy.mint(publicKey, 1);
-
-        ethStrategy.transferOwnership(address(ethStrategyGovernor));
+        ethStrategy.grantRole(ethStrategy.MINTER_ROLE(), address(atmAuction));
+        ethStrategy.grantRole(ethStrategy.MINTER_ROLE(), address(bondAuction));
+        ethStrategy.grantRole(ethStrategy.MINTER_ROLE(), address(deposit));
+        ethStrategy.renounceRole(ethStrategy.DEFAULT_ADMIN_ROLE(), deployer);
 
         vm.stopBroadcast();
 
         string memory deployments = "deployments";
 
         vm.serializeAddress(deployments, "EthStrategy", address(ethStrategy));
-        vm.serializeAddress(deployments, "EthStrategyGovernor", address(ethStrategyGovernor));
         vm.serializeAddress(deployments, "AtmAuction", address(atmAuction));
         vm.serializeAddress(deployments, "BondAuction", address(bondAuction));
         string memory deploymentsJson = vm.serializeAddress(deployments, "Deposit", address(deposit));
 
         string memory deployedConfig = "config";
-        vm.serializeAddress(deployedConfig, "deployer", publicKey);
+        vm.serializeAddress(deployedConfig, "deployer", deployer);
         vm.serializeUint(deployedConfig, "DepositCap", config.deposit.cap);
         vm.serializeUint(deployedConfig, "DepositConversionRate", config.deposit.conversionRate);
         vm.serializeUint(deployedConfig, "DepositConversionPremium", config.deposit.conversionPremium);
@@ -117,6 +112,8 @@ contract Deploy is Script {
         vm.serializeUint(deployedConfig, "votingDelay", config.governor.votingDelay);
         vm.serializeUint(deployedConfig, "votingPeriod", config.governor.votingPeriod);
         vm.serializeUint(deployedConfig, "startTime", config.deposit.startTime);
+        vm.serializeUint(deployedConfig, "voteExtension", config.governor.voteExtension);
+        vm.serializeUint(deployedConfig, "timelockDelay", config.governor.timelockDelay);
         string memory deployedConfigJson = vm.serializeUint(deployedConfig, "startBlock", block.number);
 
         console.log(config.deposit.signer);

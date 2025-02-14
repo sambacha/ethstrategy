@@ -4,9 +4,7 @@ pragma solidity ^0.8.26;
 import {Test} from "forge-std/Test.sol";
 import {AtmAuction} from "../../src/AtmAuction.sol";
 import {EthStrategy} from "../../src/EthStrategy.sol";
-import {EthStrategyGovernor, IVotes} from "../../src/EthStrategyGovernor.sol";
 import {USDCToken} from "./USDCToken.sol";
-import {TimelockController} from "@openzeppelin/contracts/governance/TimelockController.sol";
 
 interface IERC20 {
     function mint(address to, uint256 amount) external;
@@ -15,7 +13,6 @@ interface IERC20 {
 
 contract BaseTest is Test {
     EthStrategy ethStrategy;
-    EthStrategyGovernor governor;
     USDCToken usdcToken;
     Account initialOwner;
     Account admin1;
@@ -38,12 +35,9 @@ contract BaseTest is Test {
 
         usdcToken = new USDCToken();
 
-        ethStrategy = new EthStrategy(initialOwner.addr);
         vm.prank(initialOwner.addr);
-        governor = new EthStrategyGovernor(IVotes(address(ethStrategy)), 4, 7200, 50400, 0);
+        ethStrategy = new EthStrategy(4, 1 days, 1 weeks, 0, 1 days, 1 days);
 
-        vm.prank(initialOwner.addr);
-        ethStrategy.transferOwnership(address(governor));
         alice = address(1);
         vm.label(alice, "alice");
         bob = address(2);
