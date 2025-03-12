@@ -1,0 +1,13 @@
+# Basic configuration
+testMode: property
+testLimit: 50000
+seqLen: 100
+shrinkLimit: 5000
+
+# Multi-contract testing setup
+#filterFunctions: ["echidna_"]
+#filterBlacklist: false
+
+# Addresses to use during testing
+deployer: "0x10000"
+sender: ["0x10000", "0x20000", "0x30000", "0x40000", "0x50000"]
