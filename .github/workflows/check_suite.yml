@@ -51,11 +51,11 @@ jobs:
           - foundry-version: 'nightly'
             solc-version: '0.8.27'
             check-name: 'Foundry Nightly - Solc 0.8.27'
-          - foundry-version: '1.0.0-stable'
+          - foundry-version: 'stable'
             solc-version: '0.8.26'
             check-name: 'Foundry Stable - Solc 0.8.26'
             primary: true
-          - foundry-version: '1.0.0-stable'
+          - foundry-version: 'stable'
             solc-version: '0.8.27'
             check-name: 'Foundry Stable - Solc 0.8.27'
     
