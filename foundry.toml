@@ -110,7 +110,7 @@ sort_imports = false
 
 [doc]
 out = "docs"
-title = ""
+title = "EthStrategy"
 book = "book.toml"
 homepage = "README.md"
 ignore = []
