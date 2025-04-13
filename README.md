@@ -1,5 +1,8 @@
 ### **EthStrategy ($ETHXR)**
 
+![Dynamic TOML Badge](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2Fsambacha%2Fethstrategy%2Frefs%2Fheads%2Fmaster%2Ffoundry.toml&query=%24.doc.title&style=flat&label=Foundry&labelColor=%23111&color=%23f8f8f8)
+
+
 #### **What is it?**
 
 EtherStrategy (\$ETHXR) is a tokenized vehicle for ETH accumulation, giving \$ETHXR holders a claim on a growing pool of ETH managed through fully transparent, onchain strategies.
