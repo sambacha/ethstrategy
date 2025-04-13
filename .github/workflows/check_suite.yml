@@ -41,7 +41,9 @@ jobs:
     name: Foundry ${{ matrix.foundry-version }} / Solc ${{ matrix.solc-version }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    
+
+
+# <https://github.com/foundry-rs/foundry/releases/download/stable/foundry_stable_linux_amd64.tar.gz>
     strategy:
       fail-fast: false
       matrix:
@@ -52,11 +54,11 @@ jobs:
           - foundry-version: 'nightly'
             solc-version: '0.8.27'
             check-name: 'Foundry Nightly - Solc 0.8.27'
-          - foundry-version: '1.0.0-stable'
+          - foundry-version: 'stable'
             solc-version: '0.8.26'
             check-name: 'Foundry Stable - Solc 0.8.26'
             primary: true
-          - foundry-version: '1.0.0-stable'
+          - foundry-version: 'stable'
             solc-version: '0.8.27'
             check-name: 'Foundry Stable - Solc 0.8.27'
     
